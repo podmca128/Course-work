@@ -1,0 +1,3725 @@
+from tkinter import *
+from tkinter import messagebox
+import sqlite3
+from tkinter import ttk
+from tkinter import scrolledtext
+import re
+import tkinter as tk
+
+
+
+
+#this connects to the database
+#of the database doesnt exist it will create it
+connection = sqlite3.connect("kayak.db")
+cursor = connection.cursor()
+
+#creates a instructor table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblinstructors
+    (
+    instructorID INTEGER NOT NULL,
+    instructorFirstName TEXT,
+    instructorSurname TEXT,
+    instructorUsername TEXT,
+    instructorPassword TEXT,
+    instructorMobileNum TEXT,
+    instructorDOB DATE,
+    instructorPostcode TEXT,
+    instructorEmail TEXT,
+    instructorBlurb TEXT,
+    instructorEmergencyNum TEXT,
+    instructorRole TEXT,
+    primary key (instructorID)
+    )
+    """
+
+#executes the command and creates instructor table
+cursor.execute(sqlCommand)
+
+#creates a customer table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblcustomer    
+    (
+    customerID INTEGER NOT NULL,
+    customerFirstName TEXT,
+    customerSurname TEXT,
+    customerMobileNum TEXT,
+    customerDOB DATE,
+    customerPostcode TEXT,
+    customerEmail TEXT,
+    customerEmergencyNum TEXT,
+    primary key (customerID)
+    )
+    """
+
+#executes the command and creates customer table
+cursor.execute(sqlCommand)
+
+#creates a session table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblsession  
+    (
+    sessionID INTEGER NOT NULL,
+    sessionName TEXT,
+    sessionLevel INTEGER,
+    sessionParticipants INTEGER,
+    sessionMaxSize INTEGER,
+    sessionInstructor TEXT,
+    sessionCost REAL,
+    sessionTimeStart TEXT,
+    sessionDuration TEXT,
+    sessionDate DATE,  
+    primary key (sessionID)
+    )
+    """
+
+#executes the command and creates session table
+cursor.execute(sqlCommand)
+
+#creates a rental table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblrental  
+    (
+    rentalID INTEGER NOT NULL,
+    rentalEquipmentName TEXT,
+    rentalDate DATE,
+    rentalTime TEXT,
+    rentalCustomerName TEXT,
+    rentalReturn TEXT,
+    rentalQty INTEGER,
+    rentalCost REAL,
+    primary key (rentalID)
+    )
+    """
+
+#executes the command and creates a rental table
+cursor.execute(sqlCommand)
+
+#creates a storage table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblstorage  
+    (
+    storageID INTEGER NOT NULL,
+    storageEquipmentName TEXT,
+    storageDate DATE,
+    storageSpace TEXT,
+    storageCustomerName TEXT,
+    storageReturn TEXT,
+    storageItemQty INTEGER,
+    storageCost REAL,
+    primary key (storageID)
+    )
+    """
+
+#executes the command and creates a storage table
+cursor.execute(sqlCommand)
+
+#Creates bookings table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblbooking
+    (
+    bookingsID INTEGER NOT NULL,
+    customerID INTEGER,
+    sessionID INTEGER,
+    rentalID INTEGER,
+    storageID INTEGER,
+    Cost FLOAT,
+    bookingPaid BOOLEAN,
+    primary key (bookingsID)
+    )
+"""
+cursor.execute(sqlCommand)
+
+#creates payment table
+sqlCommand = """
+    CREATE TABLE IF NOT EXISTS tblinvoice
+    (
+    invoiceID INTEGER NOT NULL,
+    customerID INTEGER,
+    invoiceAmount FLOAT,
+    invoiceDate DATE,
+    primary key (invoiceID)
+    )
+"""
+cursor.execute(sqlCommand)
+
+#saves changes made to the database and closes the connection
+connection.commit()
+connection.close()
+
+
+
+#function that will perform a presence check to ensure all data is entered
+def presenceCheck(rec):
+    presence = True
+    for x in range(len(rec)):
+        if rec[x] == "":
+            presence = False
+    return presence
+
+#check entry fields to ensure that all characters entered are letters
+def stringVal2(text):
+    valid = True
+    for x in range(len(text)):
+        if ord(text[x]) not in range (65,91):
+            if ord(text[x]) not in range(97,123):
+                valid = False
+    return valid
+
+#returns the 3rd field in a record
+def getID(ID):
+
+    field = ID.split()
+    return(field[2])
+
+#returns 2nd field in a record
+def getIDD(ID):
+
+    field = ID.split()
+    return(field[1])
+
+#returns 1st field in a record
+def getIDDD(ID):
+
+    field = ID.split()
+    return(field[0])
+
+def openMenu():
+    global ans
+    if ans == 1:
+        mainMenu()
+    if ans == 2:
+        mainMenu2()
+
+
+#---------------------MAIN MENU---------------------
+
+def mainMenu():
+    global root
+    root = Tk() #setting up window
+    root.geometry("500x650")
+    root.title("Main menu")
+    root.resizable(False, False)
+    root.configure(bg="black")
+
+    frametitle = Frame(root, bg="green") #setting up frame
+    frametitle.grid(row=1, column=0, columnspan=1, padx=180, pady=10)
+    Label(frametitle, text="Main Menu", font=("Aptos", 16), bg="green").grid(row=1, column=1, columnspan=2, padx=20, pady=20)
+
+    framebutton = Frame(root, bg="green")
+    framebutton.grid(row=2, column=0, columnspan=1, padx=15, pady=15)
+
+    #set up buttons for each menu
+    custMenuButton = Button(framebutton, text="Customer Menu", bg="white", width=15, command=customerMenu)
+    custMenuButton.grid(row=1, column=1, padx=20, pady=20)
+
+    instructorMenuButton = Button(framebutton, text="Instructor Menu", bg="white", width=15, command=instructorMenu)
+    instructorMenuButton.grid(row=2, column=1, padx=20, pady=20)
+
+    invoiceMenuButton = Button(framebutton, text = 'Invoice Menu', bg = 'white', width = 15, command = invoiceMenu)
+    invoiceMenuButton.grid(row = 3, column = 1, padx = 20, pady = 20)
+
+    sessionMenuButton = Button(framebutton, text="Session Menu", bg="White", width=15, command=sessionMenu)
+    sessionMenuButton.grid(row=4, column=1, padx=20, pady=20)
+
+    rentalMenuButton = Button(framebutton, text="Rental Menu", bg="white", width=15, command=rentalMenu)
+    rentalMenuButton.grid(row=5, column=1, padx=20, pady=20)
+
+    storageMenuButton = Button(framebutton, text="Storage Menu", bg="white", width=15, command=storageMenu)
+    storageMenuButton.grid(row=6, column=1, padx=20, pady=20)
+
+    bookingmenubutton = Button(framebutton, text = 'Booking Menu', bg = 'white',
+                    width = 15, command = bookingMenu)
+    bookingmenubutton.grid(row = 7, column = 1, padx = 20, pady = 20)
+
+
+    payMenuButton = Button(framebutton, text="Payment Menu", bg="white", width=15, command=payment)
+    payMenuButton.grid(row=8, column=1, padx=20, pady=20)
+
+def mainMenu2():
+    global root
+    root = Tk() #setting up window
+    root.geometry("500x650")
+    root.title("Main Menu")
+    root.resizable(False, False)
+    root.configure(bg="black")
+
+    frametitle = Frame(root, bg="green") #setting up frame
+    frametitle.grid(row=1, column=0, columnspan=1, padx=180, pady=10)
+    Label(frametitle, text="Main Menu", font=("Aptos", 16), bg="green").grid(row=1, column=1, columnspan=2, padx=20, pady=20)
+
+    framebutton = Frame(root, bg="green")
+    framebutton.grid(row=2, column=0, columnspan=1, padx=15, pady=15)
+
+    #setting up buttons
+    custMenuButton = Button(framebutton, text = "Customer Menu", bg="white", width = 15, command=customerMenu)
+    custMenuButton.grid(row=1, column=1, padx=20, pady=20)
+
+    sessionMenuButton = Button(framebutton, text="Session Menu", bg="White", width=15, command=sessionMenu)
+    sessionMenuButton.grid(row=4, column=1, padx=20, pady=20)
+
+    rentalMenuButton = Button(framebutton, text="Rental Menu", bg="white", width=15, command=rentalMenu)
+    rentalMenuButton.grid(row=5, column=1, padx=20, pady=20)
+
+    storageMenuButton = Button(framebutton, text="Storage Menu", bg="white", width=15, command=storageMenu)
+    storageMenuButton.grid(row=6, column=1, padx=20, pady=20)
+
+#---------------------INSTRUCTOR MENU---------------------
+
+def instructorMenu():
+        root.destroy() #Destroys Main Menu
+        def destroy(): #destroys Instructor Menu + opens Main Menu
+            top.destroy()
+            openMenu()
+
+        def edit(): #edits records in the database
+                def EditInstructor():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #getting field, value and search entry fields and assigning them to new variables
+                        field_edit = field.get()
+                        value_edit = value.get()
+                        search_edit = value.get()
+
+                        if search_edit != "": #checks if all fields are filled
+                            #assigns the id fieldof the selected record to a variable
+                            iInstructorID = getID(search_edit)
+
+                            #validation check for new values entered
+                            validation = True
+                            #presence checks
+                            presenceCheck(field_edit)
+                            presenceCheck(value_edit)
+                            presenceCheck(search_edit)
+
+                            if field_edit != "instructorDOB":
+                                #updates database
+                                cursor.execute(f"UPDATE tblinstructors SET {field_edit} = '{value_edit}' WHERE instructorID = {iInstructorID}")
+                                messagebox.showinfo(title = "Edit Instructor", message = "You have changed instructor details")
+                                connection.commit()
+                                connection.close()
+                                #close edit window
+                                rootEdit.destroy()
+                                #update form in instructor menu
+                                DisplayForm()
+
+                            else:
+                                #format check for the DOB
+                                ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}", value_edit)
+                                if(not ValidDOB):
+                                    validation=False
+                                    messagebox.showinfo(title = "Error",
+                                    message = "Error - Enter data in form XX/XX/XXXX")
+                                    #place the edit window as top
+                                    rootEdit.lift()
+
+                                else:
+                                    #update database if DOB format checks passed
+                                    cursor.execute(f"UPDATE tblinstructors SET {field_edit} = '{value_edit}' WHERE instructorID = {iInstructorID}")
+                                    messagebox.showinfo(title = "Edit Instructor", message = "You have successfully changed the instructor details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in instructor menu
+                                    DisplayForm()
+
+                        else:
+                            #runs if presence check isnt passed
+                            messagebox.showinfo(title = "Error",
+                            message = "Error - All fields not filled")
+                            #place edit window as top
+                            rootEdit.lift()
+
+                #edit window
+                global value, field, search
+
+                rootEdit = Tk()
+                rootEdit.geometry("306x195")
+                rootEdit.title("Instructor Edit Menu")
+                rootEdit.resizable (False,False)
+                rootEdit.configure(bg = "black")
+
+                #create header
+                frameEdit = Frame(rootEdit, bg="green")
+                frameEdit.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+                Label(frameEdit, text = "Instructor Edit Menu", font=('Aptos', 16), width=20, bg="green").grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                #search of instructor database to get details for drop menu
+                instructor = []
+                for row in cursor.execute("SELECT instructorFirstName, instructorSurname, instructorID FROM tblinstructors"):
+                        instructor.append(row)
+                #creating dropdown menu
+                search = ttk.Combobox(rootEdit, values = instructor)
+                search.place(x = 153, y = 70)
+                Label(rootEdit, text = "Instructor name", width = 19, bg = "green").place(x=10, y=70)
+
+                field = ttk.Combobox(rootEdit, text="a")
+                field.place(x=153, y=100)
+                field.config(values=("instructorID", "instructorFirstName", "instructorSurname", "instructorUsername", "instructorPassword", "instructorMobileNum", "instructorDOB", "instructorPostcode", "instructorEmail", "instructorBlurb", "instructorEmergencyNum", "instructorRole"))
+
+                #creating entry field for the user to enter the new value
+                Label(rootEdit, text = 'Field to change', width = 19, bg='green').place(x=10, y=100)
+                value = Entry(rootEdit, width=23, bg="white", borderwidth=2, relief="ridge")
+                value.place(x=153, y=130)
+                Label(rootEdit, text='New Value', width=19, bg="green").place(x=10, y=130)
+
+                #creating submit button which will save the changes to the instructor database
+                submitB = Button(rootEdit, text="submit", width=25, bg="white", command=EditInstructor)
+                submitB.place(x=59, y=160)
+
+        def add():
+                #adds record to instructor database
+                def addInstructor():
+                     
+
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+
+                        #setting up variables to hold the data entered
+                        iFirstName = firstname.get()
+                        #use capitalize to ensure name has capital
+                        iFirstName = iFirstName.capitalize()
+                        iSurname = surname.get()
+                        iSurname = iSurname.capitalize()
+                        iUsername = username.get()
+                        iPassword = password.get()
+                        iMobileNum = mobileNum.get()
+                        iDob = dob.get() 
+                        iPostcode = postcode.get() 
+                        iEmail = email.get()
+                        iBlurb = blurb.get()
+                        iEmergencyNum = emergencyNum.get()
+                        iRole = role.get()
+
+                        #creatig list that will enable the values to be stored in database
+                        instructorRec = [iFirstName, iSurname, iUsername, iPassword, iMobileNum, iDob, iPostcode, iEmail, iBlurb, iEmergencyNum, iRole]
+
+                        validation = True
+
+                        #---Validation Checks---#
+
+                        #--Length Check---#
+                        #root_add.lift() used to place this as top window after an error message box
+
+                        if len(iFirstName) > 15:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of the First Name must be below 15 characters")
+                            root_add.lift()
+
+                        elif len(iSurname) > 20:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Surname must be below 20 characters")
+                            root_add.lift()
+
+                        elif len(iUsername) > 15:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Username must be below 15 characters")
+                            root_add.lift()
+
+                        elif len(iPassword) > 15:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Password must be below 15 characters")
+                            root_add.lift()
+
+                        elif len(iRole) > 20:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Role must be below 30 characters')
+                            root_add.lift()
+                        
+                        elif len(iMobileNum) != 11:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Mobile Number must be 11 characters')
+                            root_add.lift()
+
+                        elif len(iDob) != 10:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Date of Birth must be exactly 10 characters")
+                            root_add.lift()
+                    
+                        elif len(iPostcode) > 7 or len(iPostcode) < 5:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Postcode must be between 5 and 7 characters")
+                            root_add.lift()
+
+                        elif len(iEmail) > 25:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Email must be below 25 characters")
+                            root_add.lift()
+
+                        elif len(iBlurb) > 750:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Length of Blurb must be below 750 characters")
+                            root_add.lift()
+                        
+                        elif len(iEmergencyNum) != 11:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Emergency Number must be 11 characters')
+                            root_add.lift() 
+
+                    
+                        #--type check--#
+
+                        #checks all characters are letters
+                        elif stringVal2(iSurname) != True:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Data entered for Surname has to be letters")
+                            root_add.lift()
+
+                        elif stringVal2(iFirstName) != True:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Data entered for First Name has to be letters")
+                            root_add.lift()
+
+                        elif stringVal2(iBlurb) != True:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Data entered for Blurb has to be letters")
+                            root_add.lift()
+                             
+
+
+                        #check all characters are integers
+                        try:
+                            int(iMobileNum)  
+                        except:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Data entered for Mobile Number must be an integer")
+                            root_add.lift()
+                        else:
+                            int(iMobileNum)
+
+                        try:
+                            int(iEmergencyNum)  
+                        except:
+                            validation = False
+                            messagebox.showinfo(title = "Error", message = "Data entered for Emegency Number must be an integer")
+                            root_add.lift()
+                        else:
+                            int(iEmergencyNum)
+
+                            
+                        #format check for date of birth
+                        ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}", iDob)
+                        if (not ValidDOB):
+                            validation=False
+                            messagebox.showinfo(title = "Error",
+                            message = "Please enter data in form XX/XX/XXXX")
+                            root_add.lift()
+
+                        if validation == True:
+                            #presence check
+                            presencePassed = presenceCheck(instructorRec)
+                            if presencePassed:
+                                if validation == True:
+                                    #adds values in the list instructorRec to the instructor database as a new record
+                                    cursor.execute("INSERT INTO tblinstructors VALUES(Null,?,?,?,?,?,?,?,?,?,?,?)", instructorRec)
+                                    connection.commit()
+                                    connection.close()
+                                    messagebox.showinfo(title = "Instructor Added", message = "Instructor successfully added")
+                                    #destroy add window
+                                    root_add.destroy()
+                                    #update form in instructor menu
+                                    DisplayForm()
+                        else:
+                                messagebox.showinfo(title = 'Error', message = 'Error - All fields must be filled correctly')
+                                root_add.lift()
+
+
+                    
+
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry("335x465")
+                root_add.title("Instructor Add Menu")
+                root_add.resizable(False, False)
+                root_add.configure(background="black")
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = "green")
+                frame_heading.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                #frame to hold the entry fields and buttons
+                frame_add = Frame(root_add, bg = "green")
+                frame_add.grid(row=2, column=1, columnspan=2, padx=10, pady=10)
+
+                #creating the labels
+                Label(frame_heading, text = 'Instructor Add Menu', font=('Aptos', 16), bg="green").grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+                Label(frame_add, text = 'Enter First Name', bg='green').grid(row = 1, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Surname', bg = 'green').grid(row = 2, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Username', bg = 'green').grid(row = 3, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Password: ', bg = 'green').grid(row = 4, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Role', bg = 'green').grid(row = 5, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Mobile Number', bg = 'green').grid(row = 6, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Date of Birth', bg = 'green').grid(row = 7, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Postcode', bg = 'green').grid(row = 8, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Email', bg = 'green').grid(row = 9, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Blurb', bg = 'green').grid(row = 10, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Emergency Number', bg = 'green').grid(row = 11, column = 0, padx = 5, pady = 5)
+
+
+                #creating entry fields
+                firstname = Entry(frame_add, width = 25, bg = 'white')
+                firstname.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+                surname = Entry(frame_add, width = 25, bg = 'white')
+                surname.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+                username = Entry(frame_add, width = 25, bg = 'white')
+                username.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+                password = Entry(frame_add, width = 25, bg = 'white')
+                password.grid(row = 4, column = 1, padx = 5, pady = 5)
+
+                role = ttk.Combobox(frame_add, width = 22, text='a')
+                role.grid(row = 5, column = 1, padx=5, pady=5)
+                role.config(values=('Owner','Leader'))
+
+                mobileNum = Entry(frame_add, width = 25, bg = 'white')
+                mobileNum.grid(row = 6, column = 1, padx = 5, pady = 5)
+
+                dob = Entry(frame_add, width = 25, bg = 'white')
+                dob.grid(row = 7, column = 1, padx = 5, pady = 5)
+
+                postcode = Entry(frame_add, width = 25, bg = 'white')
+                postcode.grid(row = 8, column = 1, padx = 5, pady = 5)
+
+                email = Entry(frame_add, width = 25, bg = 'white')
+                email.grid(row = 9, column = 1, padx = 5, pady = 5)
+
+                blurb = Entry(frame_add, width = 25, bg = 'white')
+                blurb.grid(row = 10, column = 1, padx = 5, pady = 5)
+
+                emergencyNum = Entry(frame_add, width = 25, bg = 'white')
+                emergencyNum.grid(row = 11, column = 1, padx = 5, pady = 5)
+
+                #creating the submit button
+                submit = Button(frame_add, text = 'Submit', width = 15, command = addInstructor)
+                submit.grid(row = 13, column = 1, padx = 5, pady = 5)
+            
+        def delete():
+             
+            def deleteInstructor():
+                    #function that permanently deletes a record from the instructor database
+
+                    #get the search input from the entry field
+                    instructor_ID = search.get()
+                    connection = sqlite3.connect("kayak.db")
+                    cursor = connection.cursor()
+                    #getting the id
+                    IID = instructor_ID.split()
+                    primary_key_field = IID[2]
+                    #deletes the record from the database which contains the id
+                    cursor.execute("DELETE FROM tblInstructors WHERE instructorID =" + primary_key_field)
+                    #creating message to confirm this
+                    messagebox.showinfo(title = 'Instructor Delete Menu', message = 'Instructor has been successfully deleted from database')
+                    connection.commit()
+                    connection.close()
+                    #close delete form and update form in main instructor menu
+                    rdelete.destroy()
+                    DisplayForm()
+
+            #instructor delete window
+            rdelete = Tk()
+            rdelete.geometry('282x135')
+            rdelete.title('Instructor Delete Menu')
+            rdelete.resizable(False,False)
+            rdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(rdelete, bg='green')
+            dframe.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+            Label(dframe, text = "Instructor Delete Menu", font = ('Aptos', 16), bg="green").grid(row=1, column=1, columnspan=2,
+                                                                                                  padx=36, pady=10)
+            
+            #label for entry field
+            Label(rdelete, text = "Select instructor", bg="green", width=16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            instructorList = []
+
+            for row in cursor.execute("SELECT instructorFirstName, instructorSurname, instructorID FROM tblinstructors"):
+                    instructorList.append(row)
+            
+            #creating dropdown menu
+            search = ttk.Combobox(rdelete, values = instructorList)
+            search.place(x=129, y=70)
+
+            #creating delete button
+            Button(rdelete, text = "Submit", width = 13, bg = "green", command = deleteInstructor).place(x=86, y=100)
+
+
+
+#---------------------SEARCH---------------------
+
+        def search(event):
+            #getting the serch input from the entry field
+            searchterm = search_input.get()
+            search_term = str(searchterm)
+
+            #update the display of the database
+            DisplayData(search_term)
+
+
+        #---------------------INSTRUCTOR MENU INTERFACE---------------------
+        #Setting up window
+        top = Tk()
+        top.title("Instructor Menu")
+        top.geometry("1250x270")
+        top.configure(background='black')
+
+        #dropdown menu options
+        options = ["First Name", "Surname", "Instructor ID", "Role"]
+
+        #datatype of menu text
+        clicked = StringVar()
+
+        #initial menu text
+        clicked.set( "First Name" )
+
+        #creating buttons
+        b1 = Button(top, text="Add", bg = "green", command = add)
+        b2 = Button(top, text="Delete", bg="green", command = delete)
+        b3 = Button(top, text="Edit", bg="green", command = edit)
+        b4 = Button(top, text="Filter by:", bg="green")
+        drop = OptionMenu(top, clicked, *options, command=search)
+        drop.configure(bg="green")
+        b5 = Button(top, text="Main Menu", bg="green", command=destroy)
+
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y=155, x=15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y=240, x=15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y=70, x=510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y=70, x=810)
+
+        #creating serch feature
+        search_input = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        search_input.place(x=220, y=70)
+        #binding the search function to a key release
+        search_input.bind('<KeyRelease>', search)
+
+
+
+        searchh = Label(top, text="search:", width=10, height=1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+        #creating title
+        frame_h = Frame(top, bg="green")
+        frame_h.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+        Label(frame_h, text = "Instructor Menu", font=("Aptos", 16), bg="green").grid(row=1, column=2, columnspan=2, padx=525, pady=10)
+
+
+        #defining function for creating GUI layout
+        def DisplayForm():
+            global tree
+            global SEARCH
+            SEARCH = StringVar()
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100, y=110)
+
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL) 
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            tree = ttk.Treeview(MidViewForm, columns=("instructorID", "instructorFirstName", "instructorSurname", "instructorUsername", "instructorPassword", "instructorMobileNum", "instructorDOB", "instructorPostcode", "instructorEmail", "instructorBlurb", "instructorEmergencyNum", "instructorRole"),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=tree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=tree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+            #setting headings for the columns
+            tree.heading('instructorID', text="Instructor ID", anchor=W)
+            tree.heading('instructorFirstName', text="First Name", anchor=W)
+            tree.heading('instructorSurname', text="Surname", anchor=W)
+            tree.heading('instructorUsername', text="Username", anchor=W)
+            tree.heading('instructorPassword', text="Password", anchor=W) 
+            tree.heading('instructorMobileNum', text="Mobile Number", anchor=W)
+            tree.heading('instructorDOB', text="Date of Birth", anchor=W)
+            tree.heading('instructorPostcode', text="Postcode", anchor=W)
+            tree.heading('instructorEmail', text="Email", anchor=W)
+            tree.heading('instructorBlurb', text="Blurb", anchor=W)
+            tree.heading('instructorEmergencyNum', text="Emergency Number", anchor=W)
+            tree.heading('instructorRole', text="Role", anchor=W)
+
+            #setting width of the columns
+            tree.column('#0', stretch=NO, minwidth=0, width=0)
+            tree.column('#1', stretch=NO, minwidth=25, width=50)
+            tree.column('#2', stretch=NO, minwidth=25, width=80)
+            tree.column('#3', stretch=NO, minwidth=25, width=80)
+            tree.column('#4', stretch=NO, minwidth=25, width=80)
+            tree.column('#5', stretch=NO, minwidth=25, width=80)
+            tree.column('#6', stretch=NO, minwidth=25, width=80)
+            tree.column('#7', stretch=NO, minwidth=25, width=100)
+            tree.column('#8', stretch=NO, minwidth=25, width=80)
+            tree.column('#9', stretch=NO, minwidth=25, width=80)
+            tree.column('#10', stretch=NO, minwidth=25, width=110)
+            tree.column('#11', stretch=NO, minwidth=25, width=80)
+
+            tree.pack()
+            DisplayData()
+
+
+
+        def DisplayData(search_term=""):
+            #opens a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+
+            #create a cursor object
+            cursor = connection.cursor()
+
+            #clear the current data
+            tree.delete(*tree.get_children())
+
+            #execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT * FROM tblinstructors"
+            if search_term:
+                sql += f" WHERE instructorFirstName LIKE '%{search_term}%' OR instructorSurname LIKE '%{search_term}%' OR instructorUsername LIKE '%{search_term}%' OR instructorRole LIKE '%{search_term}%' OR instructorDOB LIKE '%{search_term}%'"
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+
+            #getting the value that the user wants the display to be filtered by
+            clicked1 = clicked.get()
+
+            #if statement which corresponds order to selected value from filter by menu
+            if clicked1 == "First Name":
+                rows = sorted(rows, key=lambda x: x[1])
+            elif clicked1 == "Surname":
+                rows = sorted(rows, key=lambda x: x[2])
+            elif clicked1 == "Instructor ID":
+                rows = sorted(rows, key=lambda x: x[0])
+            elif clicked1 == "Role":
+                rows = sorted(rows, key=lambda x: x[5])
+            
+            
+
+            #add the search results to the tree view
+            for row in rows:
+                tree.insert("", "end", values=row)
+            
+
+        #calling function
+        DisplayForm()
+
+
+
+
+        top.mainloop()
+
+
+
+
+
+#---------------------CUSTOMER MENU---------------------
+
+def customerMenu():
+        #destroying main menu
+        root.destroy()
+        #function that destroys the customer menu and opens the main menu
+        def destroy():
+            top.destroy()
+            openMenu()
+
+        def edit():
+                #function that edits the selected field of the customer database
+                def EditCustomer():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #getting the field, value and search entry field and assigning them to new variables
+                        field_edit = field.get()
+                        value_edit = value.get()
+                        search_edit = search.get()
+
+                        if search_edit != "": #checks if all selected fields are filled
+                            #assigns the id field of the selected record to a variable
+                            iCustomerID = getID(search_edit)
+
+                            #validation checks for the new value entered
+                            validation = True
+                            #presence checks
+                            presenceCheck(field_edit)
+                            presenceCheck(value_edit)
+                            presenceCheck(search_edit)
+
+                            if field_edit != 'customerDOB':
+                                #updates database
+                                cursor.execute(f"UPDATE tblcustomer SET {field_edit} = '{value_edit}' WHERE customerID = {iCustomerID}") #updates database
+                                messagebox.showinfo(title = "Edit Customer", message = "You have changed the customer details")
+
+                                connection.commit()
+                                connection.close()
+                                #close edit window
+                                rootEdit.destroy()
+                                #update form in instructor menu
+                                DisplayForm()
+                            else:
+                                #format check for the DOB
+                                ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}", value_edit)
+                                if (not ValidDOB):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter data in form XX/XX/XXXX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift()
+                                else:
+                                    #updates the database if the format check for DOB is passed
+                                    cursor.execute(f"UPDATE tblcustomer SET {field_edit} = '{value_edit}' WHERE customerID = {iCustomerID}")
+                                    messagebox.showinfo(title = "Edit Customer", message = "You have successfully changed the customer details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in instructor menu
+                                    DisplayForm()
+                        else:
+                            #runs if presence check isnt passed
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - All fields not filled')
+                            #placing the edit window as top again
+                            rootEdit.lift()
+
+
+
+                #edit window
+                global value, field, search
+
+                rootEdit = Tk()
+                rootEdit.geometry('306x195')
+                rootEdit.title('Customer Edit Menu')
+                rootEdit.resizable(False, False)
+                rootEdit.configure(background = 'black')
+
+                #creating heading
+                frameEdit = Frame(rootEdit, bg="green")
+                frameEdit.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+                Label(frameEdit, text="Customer Edit Menu", font=("Aptos", 16), width=20, bg="green").grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                #search of customer database performed to get details for dropdown menus
+                customer = []
+                for row in cursor.execute("SELECT customerFirstName, customerSurname, customerID FROM tblcustomer"):
+                        customer.append(row)
+                #creating dropdown menus
+                search = ttk.Combobox(rootEdit, values = customer)
+                search.place(x=153, y=70)
+                Label(rootEdit, text = "Customer Name", width = 19, bg="green").place(x = 10, y=70)
+
+                field = ttk.Combobox(rootEdit, text="a")
+                field.place(x=153, y=100)
+                field.config(values=("customerID", 'customerFirstName', 'customerSurname', 'customerMobileNum', 'customerDOB', 'customerPostcode', 'customerEmail', 'customerEmergencyNum'))
+
+
+                #creating entry field for the user to enter the new value
+                Label(rootEdit, text = 'Field to change', width = 19, bg = "green").place(x=10, y=100)
+                value = Entry(rootEdit, width=23, bg="white", borderwidth=2, relief="ridge")
+                value.place(x=153, y=130)
+                Label(rootEdit, text = "New Value", width = 19, bg = "green").place(x=10, y=130)
+
+                #creating submit button which will save the changes to the instructor database
+                submitB = Button(rootEdit, text = 'Submit', width=25, bg="green", command = EditCustomer)
+                submitB.place(x = 59, y=160)
+                
+        def add():
+                #adds record to customer database
+                def addCustomer():
+
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+
+                        #setting up variables to hold the data entered
+                        cFirstName = firstname.get()
+                        cSurname = surname.get()
+                        cMobileNum = mobileNum.get()
+                        cDOB = dob.get()
+                        cPostcode = postcode.get()
+                        cEmail = email.get()
+                        cEmergencyNum = emergencyNum.get()
+
+                        #creating a list that will enable the values to be stored in the database
+                        customerRec = [cFirstName, cSurname, cMobileNum, cDOB, cPostcode, cEmail, cEmergencyNum]
+
+                        validation = True
+
+
+                        #----VALIDATION CHECKS----
+
+                        #Length checks
+                        ##root_add.lift() used to place this as top window again after an error message box
+
+                        if len(cFirstName) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of the First Name must be below 15 characters')
+                            root_add.lift()
+
+                        elif len(cSurname) > 20:
+                            validation = False
+                            messagebox.showinfo(title='Error', message= 'Length of Surname must be below 20 characters')
+                            root_add.lift()
+                        
+                        elif len(cMobileNum) != 11:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Mobile Number must be exactly 11 characters')
+                            root_add.lift()
+
+                        elif len(cDOB) != 10:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Date of Birth must be exactly 10 characters')
+                            root_add.lift()
+
+                        elif len(cPostcode) > 7 or len(cPostcode) < 5:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Postcode must be between 5 and 7 characters')
+                            root_add.lift()
+
+                        elif len(cEmail) > 25:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Email must be below 25 characters')
+                            root_add.lift()
+                        
+                        elif len(cEmergencyNum) != 11:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Mobile Number must be exactly 11 characters')
+                            root_add.lift()
+
+                        
+                        ##type check
+
+                        #check that all characters are letters
+                        elif stringVal2(cSurname) != True:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Surname has to be letters')
+                            root_add.lift()
+
+                        elif stringVal2(cFirstName) != True:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for First Name has to be letters')
+                            root_add.lift()
+                        
+
+                         #check that all characters are integers
+                        try:
+                            int(cMobileNum)
+                        except:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Mobile Number must be an integer')             
+                            root_add.lift()
+                        else:
+                            int(cMobileNum)
+                        
+                        try:
+                            int(cEmergencyNum)
+                        except:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Emergency Number must be an integer')             
+                            root_add.lift()
+                        else:
+                            int(cEmergencyNum)
+
+                        
+                        ##format check for date of birth
+                        ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",cDOB) 
+                        if (not ValidDOB):
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Please enter data in form XX/XX/XXXX')
+                            root_add.lift()
+
+
+                        if validation == True:
+                            #presence check
+                            presencePassed = presenceCheck(customerRec)
+                            if presencePassed:
+                                if validation == True:
+                                    # adds values in the list customerRec to the instructor database as a new record                                    
+                                    cursor.execute("INSERT INTO tblcustomer VALUES(Null,?,?,?,?,?,?,?)", customerRec)
+                                    connection.commit()
+                                    connection.close()
+                                    messagebox.showinfo(title = 'Customer Added', message = 'Customer successfully added')
+                                    # destroy add window
+                                    root_add.destroy()
+                                    #update form in customer menu
+                                    DisplayForm()
+                        else:
+                                messagebox.showinfo(title = 'Error', message = 'Error - All fields must be filled correctly')
+                                root_add.lift()
+
+                        
+
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry('350x437')
+                root_add.title('Customer Add Menu')
+                root_add.resizable(False, False)
+                root_add.configure(background = 'black')
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = 'green')
+                frame_heading.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                #frame to hold the entry fields and buttons
+                frame_add = Frame(root_add, bg='green')
+                frame_add.grid(row=2, column=1, columnspan=2, padx=10, pady=10)
+
+                #creating the labels
+                Label(frame_heading, text = 'Customer Add Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+                Label(frame_add, text = 'Enter firsname', bg = 'green').grid(row = 1, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter surname', bg = 'green').grid(row = 2, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter mobile number', bg = 'green').grid(row = 3, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter date of birth', bg = 'green').grid(row = 4, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter postcode', bg = 'green').grid(row = 5, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter email', bg = 'green').grid(row = 6, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter emegerncy number', bg = 'green').grid(row = 7, column = 0, padx = 5, pady = 5)
+
+                #creating entry fields
+                firstname = Entry(frame_add, width = 25, bg = 'white')
+                firstname.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+                surname = Entry(frame_add, width = 25, bg = 'white')
+                surname.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+                mobileNum = Entry(frame_add, width = 25, bg = 'white')
+                mobileNum.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+                dob = Entry(frame_add, width = 25, bg = 'white')
+                dob.grid(row = 4, column = 1, padx = 5, pady = 5)
+
+                postcode = Entry(frame_add, width = 25, bg = 'white')
+                postcode.grid(row = 5, column = 1, padx = 5, pady = 5)
+
+                email = Entry(frame_add, width = 25, bg = 'white')
+                email.grid(row = 6, column = 1, padx = 5, pady = 5)
+
+                emergencyNum = Entry(frame_add, width = 25, bg = 'white')
+                emergencyNum.grid(row = 7, column = 1, padx = 5, pady = 5)
+
+                #creating the submit button
+                submit = Button(frame_add, text='Submit', width = 15, command = addCustomer)
+                submit.grid(row = 9, column = 1, padx = 5, pady = 5)
+
+        def delete():
+
+            def deleteCustomer():
+                #function that permanently deletes a record form the customer database
+                
+                #get the search input from the entry field
+                customer_ID = search.get()
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+                #getting the id
+                CID = customer_ID.split()
+                primary_key_field = CID[2]
+                #deletes the record from the database which contains the id
+                cursor.execute("DELETE FROM tblcustomer WHERE customerID =" + primary_key_field)
+                #creating message to confirm this
+                messagebox.showinfo(title = 'Customer Delete', message = 'Customer has been successfully deleted from the database')
+                connection.commit()
+                connection.close()
+                #close delete form & update form in main customer menu
+                rdelete.destroy()
+                DisplayForm()
+
+
+            #customer delete window
+            rdelete = Tk()
+            rdelete.geometry('300x135')
+            rdelete.title('Customer Delete Menu')
+            rdelete.resizable(False,False)
+            rdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(rdelete, bg = "green")
+            dframe.grid(row = 1, column = 1, columnspan = 3, padx = 10, pady = 10)
+            Label(dframe, text = "Customer Delete Menu", font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2, padx=36, pady=10)
+
+            #label for entry field
+            Label(rdelete, text = 'Select customer', bg = 'green', width = 16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            customerList = []
+
+            for row in cursor.execute("SELECT customerFirstName, customerSurname, customerID FROM tblcustomer"):
+                    customerList.append(row)
+
+            #creating dropdown menu
+            search = ttk.Combobox(rdelete, values = customerList)
+            search.place(x=129,y=70)
+
+            #creating delete button
+            Button(rdelete, text = "Submit", width = 13, bg = "green", command = deleteCustomer).place(x=86,y=100)
+        
+#-----------SEARCH--------
+
+        def search(event):
+            #getting the search input
+            searchterm = searchinput.get()
+            search_term = str(searchterm)
+
+            #update the display of the database
+            DisplayData(search_term)
+
+
+        #---------CUSTOMER MENU INTERFACE----------
+        #setting up window
+        top = Tk()
+        top.title('Customer Menu')
+        top.geometry("950x270")
+        top.configure(background = 'black')
+
+        #Dropdown menu options
+        options = ["First Name", "Surname", "Customer ID"]
+
+        #datatype of menu text
+        clicked = StringVar()
+
+        #initial menu text
+        clicked.set("First Name")
+
+        #creating buttons
+        b1 = Button(top, text ="Add", bg = "green", command = add)
+        b2 = Button(top, text ="Delete", bg = "green", command = delete)
+        b3 = Button(top, text ="Edit", bg = "green", command = edit)
+        b4 = Label(top, text ="Filter by:", bg = "green")
+        drop = OptionMenu( top , clicked, *options, command=search)
+        drop.configure(bg='green')
+        b5 = Button(top, text ="Main Menu", bg = "green", command = destroy)
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y = 155, x = 15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y = 240, x = 15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y = 70, x = 510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y = 70, x = 790)
+
+        #creating search feature
+        searchinput = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        searchinput.place(x=220, y=70)
+        #binding the search function to a key release
+        searchinput.bind('<KeyRelease>', search)
+
+        searchh = Label(top, text = "search:", width=10, height = 1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+
+
+        #creating title
+        frame_h = Frame(top, bg = 'green')
+        frame_h.grid(row=1, column=1, columnspan = 2, padx=10, pady=10)
+        Label(frame_h, text = 'Customer Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=2, columnspan=2, padx=375, pady=10)
+
+
+
+        #defining function for creating GUI layout
+        def DisplayForm():
+            global ttree
+            global SearcH
+            SearcH = StringVar()
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100, y=110)
+
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            ttree = ttk.Treeview(MidViewForm,columns=('customerID','customerFirstName','customerSurname','customerMobileNum','customerDOB','customerPostcode','customerEmail','customerEmergencyNum'),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=ttree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=ttree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+            #setting headings for the columns
+            ttree.heading('customerID', text="Customer ID", anchor=W)
+            ttree.heading('customerFirstName', text="First Name", anchor=W)
+            ttree.heading('customerSurname', text="Surname", anchor=W)
+            ttree.heading('customerMobileNum', text="Mobile Number", anchor=W)
+            ttree.heading('customerDOB', text="Date of Birth", anchor=W)
+            ttree.heading('customerPostcode', text="Postcode", anchor=W)
+            ttree.heading('customerEmail', text="Email", anchor=W)
+            ttree.heading('customerEmergencyNum', text="Emergency Number", anchor=W)   
+
+            #setting width of the columns
+            ttree.column('#0', stretch=NO, minwidth=0, width=0)
+            ttree.column('#1', stretch=NO, minwidth=25, width=50)
+            ttree.column('#2', stretch=NO, minwidth=25, width=80)
+            ttree.column('#3', stretch=NO, minwidth=25, width=80)
+            ttree.column('#4', stretch=NO, minwidth=25, width=80)
+            ttree.column('#5', stretch=NO, minwidth=25, width=80)
+            ttree.column('#6', stretch=NO, minwidth=25, width=80)
+            ttree.column('#7', stretch=NO, minwidth=25, width=155)
+            #ttree.column('#8', stretch=NO, minwidth=25, width=80)
+
+            ttree.pack()
+            DisplayData()
+
+
+
+        def DisplayData(search_term=""):
+            #open a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+
+            #create cursor object
+            cursor = connection.cursor()
+            
+            #Clear the current data
+            ttree.delete(*ttree.get_children())
+
+            #Execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT * FROM tblcustomer"
+            if search_term:
+                sql += f" WHERE customerFirstName LIKE '%{search_term}%' OR customerSurname LIKE '%{search_term}%'"
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+
+            #getting the value that user wants display to be filtered by
+            clicked1 = clicked.get()
+
+            #if statement which correspond order to selected value from filter by menu 
+            if clicked1 == "First Name":
+                rows = sorted(rows, key=lambda x: x[1])
+            elif clicked1 == "Surname":
+                rows = sorted(rows, key=lambda x: x[2])
+            elif clicked1 == "Customer ID":
+                rows = sorted(rows, key=lambda x: x[0])
+            
+            #add the search results to the tree view
+            for row in rows:
+                ttree.insert("", "end", values=row)
+            
+        #calling function
+        DisplayForm()
+
+
+
+
+
+        top.mainloop()
+
+
+#----------------------------SESSION MENU-------------------#
+
+def sessionMenu():
+        #destroying main menu
+        root.destroy()
+        #function that destroys the session menu and opens the main menu
+        def destroy():
+            top.destroy()
+            openMenu()
+        
+
+        def edit():
+                #edits a record in the database
+                def EditSession():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #getting the field, value and search entry field and assigning them to the new variables
+                        field_edit = field.get()
+                        value_edit = value.get()
+                        search_edit = search.get()
+
+                        if search_edit != "":   #checks if all fields are filled
+                            #assigns the id field of the selected record to a variable
+                            iSessionID = getIDD(search_edit)
+
+                            #validation checks for the new value entered
+                            validation = True
+                            #presence checks
+                            presenceCheck(field_edit)
+                            presenceCheck(value_edit)
+                            presenceCheck(search_edit)
+
+
+                            if field_edit == 'sessionTime':
+                                #validation check to ensure that the time is entered in the correct format (XX:XX)
+                                ValidTime = re.match("[0-9]{2}[:]{1}[0-9]{2}", value_edit)
+                                if (not ValidTime):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter time in form XX:XX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift()
+                                else:
+                                    #updates the database if validation check is passed
+                                    cursor.execute(f"UPDATE tblsession SET {field_edit} = '{value_edit}' WHERE sessionID = {iSessionID}")
+                                    messagebox.showinfo(title = "Edit Session", message = "You have successfully changed the session details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close the edit window
+                                    rootEdit.destroy()
+                                    #update form in session menu
+                                    DisplayForm()
+                                
+                            elif field_edit != 'sessionDate':
+                                cursor.execute(f"UPDATE tblsession SET {field_edit} = '{value_edit}' WHERE sessionID = {iSessionID}") #updates the database
+                                messagebox.showinfo(title = "Edit Session", message = "You have changed the session details")
+                                connection.commit()
+                                connection.close()
+                                #close edit window
+                                rootEdit.destroy()
+                                #update form in session menu
+                                DisplayForm()
+                            else:
+                                #format check for the date
+                                ValidDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}", value_edit)
+                                if (not ValidDate):
+                                    validation = False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter data in form XX/XX/XXXX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift()
+                                else:
+                                    #updates the database if the format check for Date is passed
+                                    cursor.execute(f"UPDATE tblsession SET {field_edit} = '{value_edit}' WHERE sessionID = {iSessionID}")
+                                    messagebox.showinfo(title = "Edit Session", message = "You have successfully change the session details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in session menu
+                                    DisplayForm()
+                        else:
+                            #runs if presence check isnt passed
+                            messagebox.showinfor(title = 'Error',
+                            message = 'Error - All fields not filled')
+                            #placing the edit window as top again
+                            rootEdit.lift()
+            
+
+
+                #edit window
+                rootEdit = Tk()
+                global value, field, search
+                rootEdit.geometry('306x195')
+                rootEdit.title('Session Edit Menu')
+                rootEdit.resizable (False,False)
+                rootEdit.configure(background = 'black')
+
+                #creating heading
+                frameEdit = Frame(rootEdit, bg = 'green')
+                frameEdit.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+                Label(frameEdit, text = 'Session Edit Menu', font=('Aptos', 16), width = 20, bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                #search session database to get details for dropdown menus
+                session = []
+                for row in cursor.execute("SELECT sessionName, sessionID FROM tblSession"):
+                    details = str(row[0]) + " " + str(row[1])
+                    session.append(details)
+                #create dropdown menu
+                search = ttk.Combobox(rootEdit, values = session)
+                search.place(x = 153, y  = 70)
+                Label(rootEdit, text = 'Session name', width = 19, bg = 'green').place(x = 10, y = 70)
+
+                field = ttk.Combobox(rootEdit, text='a')
+                field.place(x = 153, y = 100)
+                field.config(values=('sessionID', 'sessionName', 'sessionDate', 'sessionDuration', 'sessionTimeStart', 'sessionInstructor', 'sessionParticipants', 'sessionMaxSize', 'sessionCost', 'sessionLevel'))
+
+                #creating entry field for the user to enter the new value
+                Label(rootEdit, text = 'Field to change', width = 19, bg = 'green').place(x = 10, y = 100)
+                value = Entry(rootEdit, width=23, bg = "white", borderwidth=2, relief="ridge")
+                value.place(x=153, y=130)
+                Label(rootEdit, text = 'New Value', width = 19, bg = 'green').place(x = 10, y = 130)
+
+                #creating submit button which will save the changes to the instructor database
+                submitB = Button(rootEdit, text = 'Submit', width = 25, bg = 'green', command = EditSession)
+                submitB.place(x = 59, y = 160)
+
+        def add():
+                #adds record to instructor database
+                def addSession():
+                     
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()   
+
+
+                        #setting up variables to hold the data entered
+                        ssName = name.get()
+                        ssDate = date.get()  
+                        ssDuration = duration.get()
+                        ssTimeStart = timeStart.get()
+                        ssInstructor = instructor.get()
+                        ssParticipants = participants.get()
+                        ssMaxSize = maxSize.get()
+                        ssCost = cost.get()
+                        ssLevel = level.get()
+
+                        #creating a list that will enable the values to be stored in the database
+                        sessionRec = [ssName, ssDate, ssDuration, ssTimeStart, ssInstructor, ssParticipants, ssMaxSize, ssCost, ssLevel]
+
+                        validation = True
+
+
+                        #-----VALIDATION CHECKS------#
+
+                        #length checks
+                        if len(ssName) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'length of session name must be below 15 characters')
+                            root_add.lift()
+                        #validation format check for the time
+                        ValidTime = re.match("[0-9]{2}[:]{1}[0-9]{2}",ssTimeStart)
+                        if (not ValidTime) or len(ssTimeStart)>5:
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter time in form XX:XX')
+                            root_add.lift()
+                        #Validation for the session date
+
+                        ValidDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",ssDate)
+                        if (not ValidDate):
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter date in form XX/XX/XXXX')
+                            root_add.lift()
+
+                        #check that all characters are integers
+                        try:
+                            float(ssCost)
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'data entered for cost of session must be a float (xx.xx)')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            float(ssCost)
+                            root_add.lift()
+                        try:
+                            int(ssDuration)
+                            root_add.lift()
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'data entered for duration of session must be an integer')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            int(ssDuration)
+                        
+
+                        if validation == True:
+                            #presence check
+                            presencePassed = presenceCheck(sessionRec)
+                            if presencePassed:
+                                if validation == True:
+                                    #adds values in the list sessionRec to the session database as a new record                                    
+                                    cursor.execute("INSERT INTO tblsession VALUES(Null,?,?,?,?,?,?,?,?,?)", sessionRec)
+                                    connection.commit()
+                                    connection.close()
+                                    messagebox.showinfo(title = 'Session Created', message = 'Session successfully created')
+                                    # destroy add window
+                                    root_add.destroy()
+                                    #update form in session menu
+                                    DisplayForm()
+                        else:
+                            messagebox.showinfo(title = 'Error', message = 'Error - All fields must be filled correctly')
+                            root_add.lift()
+
+                        
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry('413x437')
+                root_add.title('Session Add Menu')
+                root_add.resizable(False, False)
+                root_add.configure(background = 'black')
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = 'green')
+                frame_heading.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #frame to hold the entry feilds and buttons
+                frame_add = Frame(root_add, bg = 'green')
+                frame_add.grid(row=2, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #creating the labels
+                Label(frame_heading, text = 'Session Add Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+                Label(frame_add, text = 'Enter session name', bg = 'green').grid(row = 1, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter session level', bg = 'green').grid(row = 2, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter number of participants', bg = 'green').grid(row = 3, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter max capacity of participants', bg = 'green').grid(row = 4, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter number of instructors', bg = 'green').grid(row = 5, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter cost (£)', bg = 'green').grid(row = 6, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter start time (XX:XX)', bg = 'green').grid(row = 7, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter duration (minutes)', bg = 'green').grid(row = 8, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter date (XX/XX/XXXX)', bg = 'green').grid(row = 9, column = 0, padx = 5, pady = 5)
+                
+
+                #creating entry fields
+                name = Entry(frame_add, width = 25, bg='white')
+                name.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+                level = Spinbox(frame_add, width = 25, bg = 'white', from_=0,to=40)
+                level.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+                participants = Spinbox(frame_add, width = 25, bg = 'white', from_=0,to=40)
+                participants.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+                maxSize = Spinbox(frame_add, width = 25, bg = 'white', from_=0,to=40)
+                maxSize.grid(row = 4, column = 1, padx = 5, pady = 5)
+
+                instructor = Spinbox(frame_add, width = 25, bg='white', from_=0,to=40)
+                instructor.grid(row = 5, column = 1, padx = 5, pady = 5)
+
+                cost = Entry(frame_add, width = 25, bg = 'white')
+                cost.grid(row = 6, column = 1, padx = 5, pady = 5)
+
+                timeStart = Entry(frame_add, width = 25, bg = 'white')
+                timeStart.grid(row = 7, column = 1, padx = 5, pady = 5)
+
+                duration = Entry(frame_add, width = 25, bg = 'white')
+                duration.grid(row = 8, column = 1, padx = 5, pady = 5)
+
+                date = Entry(frame_add, width = 25, bg = 'white')
+                date.grid(row = 9, column = 1, padx = 5, pady = 5)
+
+                # creating the submit button
+                submit = Button(frame_add, text = 'Submit', width = 15, command = addSession)
+                submit.grid(row = 10, column = 1, padx = 5, pady = 5)
+
+        def delete():
+
+            def deleteSession():
+                #function that permanently deletes a record from the session database
+
+                #get the search input from the entry field
+                session_ID = search.get()
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+                #getting the id
+                SID = session_ID.split()
+                primary_key_field = SID[1]
+                #deletes the record from the database which contains the id
+                cursor.execute("DELETE FROM tblsession WHERE sessionID =" + primary_key_field)
+                #deletes the record from the database which contains the id
+                messagebox.showinfo(title = 'Session Delete', message = 'Session has been successfully deleted from the database')
+                connection.commit()
+                connection.close()
+                #close delete form and update form in main session menu
+                rdelete.destroy()
+                DisplayForm()
+
+            
+            #customer delete window
+            rdelete = Tk()
+            rdelete.geometry('300x135')
+            rdelete.title('Session Delete Menu')
+            rdelete.resizable(False,False)
+            rdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(rdelete, bg = "green")
+            dframe.grid(row = 1, column = 1, columnspan = 3, padx = 10, pady = 10)
+            Label(dframe, text = "Session Delete Menu", font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2,
+                                                    padx=36, pady=10)
+
+            #label for entry field
+            Label(rdelete, text = "Select session", bg = "green", width = 16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            sessionList = []
+
+            for row in cursor.execute("SELECT sessionName, sessionID FROM tblsession"):
+                    details = str(row[0]) + " " + str(row[1])                
+                    sessionList.append(details)
+
+            #creating dropdown menu
+            search = ttk.Combobox(rdelete, values = sessionList)
+            search.place(x=129,y=70)
+
+            #creating delete button
+            Button(rdelete, text = "Submit", width = 13, bg = "green", command = deleteSession).place(x=86,y=100)
+
+
+        def search(event):
+          #getting the search input
+          searchterm = searchinput.get()
+          search_term = str(searchterm)
+
+          #update the display of the database
+          DisplayData(search_term)
+
+        
+        #--------Session MENU INTERFACE---------#
+        #setting up window
+        top = Tk()
+        top.title('Session Menu')
+        top.geometry("835x270")
+        top.configure(background = 'black')
+
+        #Dropdown menu options 
+        options = [ "Session name", "Session cost", "Session ID", "Session date"] 
+
+        #data type of menu text
+        clicked = StringVar()
+
+        #initial menu text
+        clicked.set("Session name")
+
+        #creating buttons
+        b1 = Button(top, text ="Add", bg = "green", command = add)
+        b2 = Button(top, text ="Delete", bg = "green", command = delete)
+        b3 = Button(top, text ="Edit", bg = "green", command = edit)
+        b4 = Label(top, text ="Filter by:", bg = "green")
+        drop = OptionMenu( top , clicked, *options, command=search)
+        drop.configure(bg='green')
+        b5 = Button(top, text ="Main Menu", bg = "green", command = destroy)
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y = 155, x = 15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y = 240, x = 15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y = 70, x = 510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y = 70, x = 790)
+
+        #creating search feature
+        searchinput = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        searchinput.place(x=220, y=70)
+        searchinput.bind('<KeyRelease>', search)
+
+        searchh = Label(top, text = "search:", width=10, height = 1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+        #creating title
+        frame_h = Frame(top, bg = 'green')
+        frame_h.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+        Label(frame_h, text = 'Session Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=2, columnspan=2, padx=338, pady=10)
+
+
+        #defining function for creating GUI layout
+        
+        def DisplayForm():
+            global ttree
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100,  y=110)
+        
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            ttree = ttk.Treeview(MidViewForm,columns=('sessionID','sessionName','sessionDate','sessionDuration','sessionTimeStart','sessionInstructor','sessionParticipants','sessionMaxSize','sessionCost', 'sessionLevel'),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=ttree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=ttree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+            #setting headings for the columns
+            ttree.heading('sessionID', text="Session ID", anchor=W)
+            ttree.heading('sessionName', text="Name", anchor=W)
+            ttree.heading('sessionDate', text="Date", anchor=W)
+            ttree.heading('sessionDuration', text="Duration (minutes)", anchor=W)
+            ttree.heading('sessionTimeStart', text="Time Start", anchor=W)
+            ttree.heading('sessionInstructor', text="Instructors", anchor=W)
+            ttree.heading('sessionParticipants', text="Current participants", anchor=W)
+            ttree.heading('sessionMaxSize', text="Max capacity", anchor=W)
+            ttree.heading('sessionCost', text="Cost (£)", anchor=W)
+            ttree.heading('sessionLevel', text="Level", anchor=W)
+
+
+            #setting width of the columns
+            ttree.column('#0', stretch=NO, minwidth=0, width=0)
+            ttree.column('#1', stretch=NO, minwidth=25, width=50)
+            ttree.column('#2', stretch=NO, minwidth=25, width=80)
+            ttree.column('#3', stretch=NO, minwidth=25, width=80)
+            ttree.column('#4', stretch=NO, minwidth=25, width=80)
+            ttree.column('#5', stretch=NO, minwidth=25, width=80)
+            ttree.column('#6', stretch=NO, minwidth=25, width=80)
+            ttree.column('#7', stretch=NO, minwidth=25, width=80)
+            ttree.column('#8', stretch=NO, minwidth=25, width=100)
+            ttree.column('#9', stretch=NO, minwidth=25, width=80)
+            ttree.column('#10', stretch=NO, minwidth=25, width=80)
+
+            ttree.pack()
+            DisplayData()
+
+        def DisplayData(search_term=""):
+            #open a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+            #create a cursor object
+            cursor = connection.cursor()
+            #clear the current data
+            ttree.delete(*ttree.get_children())
+            #execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT * FROM tblsession"
+            if search_term:
+                sql += f"WHERE sessionName LIKE '%{search_term}'"
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            #getting the value that user wants to display to be filtered by
+            clicked1 = clicked.get()
+            
+            #if statement which corresponds order to selected value from filter by menu
+            if clicked1 == "Session name":
+                rows = sorted(rows, key=lambda x: x[1])
+            elif clicked1 == "Session cost":
+                rows = sorted(rows, key=lambda x: x[9])
+            elif clicked1 == "Session ID":
+                rows = sorted(rows, key=lambda x: x[0])
+            elif clicked1 == "Session date":
+                rows = sorted(rows, key=lambda x: x[2])
+            # Add the search results to the tree view
+            for row in rows:
+                ttree.insert("", "end", values=row)     
+            
+
+        #calling function
+        DisplayForm()
+
+
+
+        top.mainloop()
+
+
+
+#----------------BOOKING MENU-----------#
+def bookingMenu():
+        global newTotal
+        newTotal = 0
+        #destroying main menu
+        root.destroy()
+        #function that destroys the booking menu & opens the main menu
+        def destroy():
+            top.destroy()
+            openMenu()
+
+        def add():
+
+                def CalculateCost(sSessionID, rRentalID, sStorageID):
+                    cost  = 0
+                    validation = False
+                    connection = sqlite3.connect("kayak.db")
+                    cursor = connection.cursor()
+                    #gets the cost of the session
+                    for row1 in cursor.execute("SELECT sessionCost FROM tblsession WHERE sessionID = ?", [sSessionID]):
+                        Validation = True
+                        cost = row1[0]
+                        Cost1 = (int(cost))
+                    
+                    for row2 in cursor.execute("SELECT rentalCost FROM tblrental WHERE rentalID = ?", [rRentalID]):
+                        Validation = True
+                        cost = row2[0]
+                        Cost2 = (int(cost))
+                    
+                    for row3 in cursor.execute("SELECT storageCost FROM tblstorage WHERE storageID = ?", [sStorageID]):
+                        Validation = True
+                        cost = row3[0]
+                        Cost3 = (int(cost))
+                    
+                    Cost = Cost1 + Cost2 + Cost3
+
+                
+                #adds record to the booking database
+                def addBooking():
+                    #this function will reolace the boolean value 0/1 with the True/False making it easier to store in database
+                    def checkButtonValue(var):
+                        value = var
+                        if value == 0:
+                            value == "No"
+                        elif value == 1:
+                            value = "Yes"
+                        return value
+
+                    #retrieving the customer id
+                    cCustomerID = getID(customerID.get())
+                    sSessionID = getIDD(sessionList.get())
+                    rRentalID = getIDD(rentalList.get())
+                    sStorageID = getIDD(storageList.get())
+                    #when getting values from entry fields call the function to get the value from the check box
+                    var = var1.get()
+                    pPaid = checkButtonValue(var)
+                    Cost, Validation = CalculateCost(sSessionID, rRentalID, sStorageID, cCustomerID)
+
+                    connection = sqlite3.connect("kayak.db")
+                    cursor = connection.cursor()
+
+                    #rounds the cost to 2 decimal places
+                    Cost = (round(Cost, 2))
+                    #creating list that wil enable a new record to be added to the booking database
+                    bookingRec = [cCustomerID, sSessionID, rRentalID, sStorageID, Cost, pPaid]
+
+
+                    #selects the number of participants and max capacity from the session
+                    for row in cursor.execute("SELECT sessionParticipants, sessionMaxSize FROM tblsession WHERE sessionID = ?",[sSessionID]):
+                        Num = int(row[0])
+                        Num = Num + 1
+                        max_size = row[1]
+                    
+
+                    #adds the booking if there is space in the session and updates the number of participants of that session in the session table
+                    if Num <= max_size:
+                        cursor.execute("INSERT INTO tblbooking VALUES(Null,?,?,?,?,?,?,?)", bookingRec)
+                        cursor.execute(f"UPDATE tblsession SET sessionParticipants = '{Num}' WHERE sessionID = {sSessionID}")
+                        messagebox.showinfo(title = 'Booking Added', message = 'Booking successfully added')
+                        connection.commit()
+                        connection.close()
+
+
+                        customerID.delete(0,END)
+                        sessionList.delete(0,END)
+
+
+                        customerID.focus_set()
+                        root_add.destroy()  
+
+                    else:
+                        #doesnt update if sesion is at capacity      
+                        Num = Num - 1
+                        messagebox.showinfo(title = 'Booking Unsuccessful', message = 'Booking unsuccessful - Session at max capacity')                         
+                        root_add.destroy()
+
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry('380x250')
+                root_add.title('Booking Add Menu')
+                root_add.resizable(False, False)
+                root_add.configure(background = 'black')
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = 'green')
+                frame_heading.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #frame to hold the entry feilds and buttons
+                frame_add = Frame(root_add, bg = 'green')
+                frame_add.grid(row=2, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #creating labels
+                Label(frame_heading, text="Add Booking",font=('Aptos', 16), bg = "green").grid(row=0,column=0, padx=10, pady=10)
+                Label(frame_add, text="Customer ID", bg = "green").grid(row=1,column=0, padx=0, pady=5)
+                Label(frame_add, text="Session ID", bg = "green").grid(row=2, column=0,padx=0,pady=5)
+                Label(frame_add, text="Rental ID", bg = "green").grid(row=3, column=0,padx=0,pady=5)
+                Label(frame_add, text="Storage ID", bg = "green").grid(row=4, column=0,padx=0,pady=5)
+                Label(frame_add, text="Has booking been paid", bg = 'green').grid(row=5, column=0,padx=0,pady=5)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                customer = []
+                session = []
+                rental = []
+                storage = []
+                #gathering records to add to the dropdown menu                                                                                                                    
+                for row in cursor.execute("SELECT customerFirstName, customerSurname, customerID FROM tblcustomer"):
+                    customer.append(row)
+
+                for row1 in cursor.execute("SELECT sessionName, sessionID FROM tblsession"):
+                    details = str(row1[0]) + " " + str(row1[1])                
+                    session.append(details)
+
+                for row2 in cursor.execute("SELECT rentalEquipmentName, rentalID FROM tblrental"):
+                    details = str(row2[0]) + " " + str(row2[1])                
+                    rental.append(details)
+                
+                for row3 in cursor.execute("SELECT storageEquipmentName, storageID FROM tblstorage"):
+                    details = str(row3[0]) + " " + str(row3[1])                
+                    storage.append(details)
+                
+
+                customerID = ttk.Combobox(frame_add, values=customer)
+                customerID.grid(row=1, column=1, padx=5, pady=5)
+
+                sessionList = ttk.Combobox(frame_add, values=session)
+                sessionList.grid(row=2, column=1, padx=5, pady=5)
+
+                rentalList = ttk.Combobox(frame_add, values=rental)
+                rentalList.grid(row=3, column=1, padx=5, pady=5)
+
+                storageList = ttk.Combobox(frame_add, values=storage)
+                storageList.grid(row=4, column=1, padx=5, pady=5)
+
+                var1 = IntVar()
+
+
+                #create check box
+                Checkbutton(frame_add, variable=var1, bg="green").grid(row=4, column=0, padx=3, pady=5)
+
+                #creating the add booking button
+                addBooking_button = Button(frame_add, text="Submit", width=12, command=addBooking)
+                addBooking_button.grid(row=5,column=0, padx=60, pady=5)
+
+        
+        #function which will calculate the total amount from all of a customers bookings
+        def calculateMenu():
+            #function that calculates total cost
+            def calculateTotal():
+                global newTotal
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+                ss = search.get()
+                searchh = getID(ss)
+                t = []
+                for row1 in cursor.execute("SELECT bookingPaid, Cost FROM tblbooking WHERE customerID = ?",[searchh]):
+                    if row1[0] == 'No':
+                        cost = float(row1[1])
+                        t.append(cost)
+                #finds the total
+                newTotal = sum(t)
+                Label(framee, text = ("£%.2f"%(newTotal))).grid(row=1, column=2, padx=10, pady=10)
+
+                return newTotal
+
+            #display cost menu
+            #setting up window
+            root_calc = Tk()
+            root_calc.geometry('410x200')
+            root_calc.title('Calculate Total')
+            root_calc.resizable (False,False)
+            root_calc.configure(background = 'green')
+
+            frameT = Frame(root_calc, bg="green")
+            frameT.grid(row=1, column=1, columnspan=1, padx=10, pady=10)
+
+            Label(frameT, text = 'Calculate Total', font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+            frameE = Frame(root_calc, bg = "green")
+            frameE.grid(row=2, column=1, columnspan = 1,padx = 10, pady = 10)
+
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            #gathering records for dropdown menu
+            customer = []
+            for row in cursor.execute("SELECT customerFirstName, customerSurname, customerID FROM tblcustomer"):
+                customer.append(row)
+            #creating dropdown menu
+            search = ttk.Combobox(frameE, values=customer)
+            search.grid(row=1, column=2, padx=10, pady=10)
+
+            Label(frameE, text = 'Enter Customer ID', bg = "green").grid(row=1, column=1, padx=10, pady=10)
+
+            submit_button = Button(frameE, text='Submit', width=13, command = calculateTotal)
+            submit_button.grid(row=1,column=3,padx=10,pady=10)
+
+
+            framee = Frame(root_calc, bg = "green")
+            framee.grid(row=3, column=1, columnspan=2,padx=10,pady=10)
+
+            Label(framee, text = 'Total amount owed for customer: ', bg = "green").grid(row=1, column=1, padx=10, pady=10)            
+            Label(framee, text = ("£%.2f"%(newTotal)), bg = "green").grid(row=1, column=2, padx=10, pady=10)
+
+            
+
+        def delete():
+
+            def deleteBooking():
+                #function that permanently deletes a record from the booking menu
+
+                conn = sqlite3.connect('kayak.db')
+                with conn:
+                    cursor = conn.cursor()
+                    #get the search input from the entry field and getting the id field
+                    booking_id = search.get()
+                    ID = getIDDD(booking_id)
+                    sessionID = 0
+                    for row in cursor.execute("SELECT sessionID FROM tblbooking WHERE bookingsID = ?", [ID]):
+                        sessionID = row[0]
+                        #when a booking has been chosen to be deleted the loop will locte the session related to the booking and delete a participant frm it
+                        for row1 in cursor.execute("SELECT sessionParticipants FROM tblbooking WHERE sessionID = ?", [sessionID]):
+                            x = int(row1[0])
+                            x = x - 1
+                            cursor.execute(f"UPDATE tblsession SET sessionParticipants = '{x} WHERE sessionID = {sessionID}")
+                            conn.commit()
+                
+                    #deletes the record from the database which contains the id
+                    cursor.execute("DELETE FROM tblbooking WHERE bookingsID =" + ID)
+                    #creating message to confirm this
+                    messagebox.showinfo(title = 'Booking Deleted',
+                    message = 'Booking successfully deleted')
+                    conn.commit()
+                    rdelete.destroy()
+                    DisplayForm()
+
+
+
+            #customer delete window
+            rdelete = Tk()
+            rdelete.geometry('382x135')
+            rdelete.title('Booking delete')
+            rdelete.resizable(False,False)
+            rdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(rdelete, bg = "green")
+            dframe.grid(row = 1, column = 1, columnspan = 3, padx = 10, pady = 10)
+            Label(dframe, text = "Booking Delete Menu", font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2,
+                                                    padx=36, pady=10)
+
+            #label for entry field
+            Label(rdelete, text = "Select Booking ID", bg = "green", width = 16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            bookingList = []
+            detailsList = []
+            details = []
+
+            for row in cursor.execute("SELECT bookingsID, customerID FROM tblbooking"):
+                bookingList.append(row)
+
+            for x in bookingList:
+                if x != "":
+                    bookingID = x[0]
+                    customerID = x[1]
+
+                    cursor2 = connection.cursor()
+                    cursor2.execute('SELECT customerFirstName, customerSurname FROM tblcustomer WHERE customerID = ?', [customerID,])
+                    result = cursor2.fetchone()
+                    firstname = result[0]
+                    surname = result[1]
+                details = [bookingID, firstname, surname]
+
+                detailsList.append(details)
+            connection.commit()
+            connection.close()
+
+            #creating dropdown menu
+            search = ttk.Combobox(rdelete, values = detailsList)
+            search.place(x=129,y=70)
+
+            #creating delete button
+            Button(rdelete, text = "Submit", width = 13, bg = "green", command = deleteBooking).place(x=86,y=100)
+
+        def search(event):
+            #getting the search input
+            searchterm = searchinput.get()
+            search_term = str(searchterm)
+
+            #update the display of the database
+            DisplayData(search_term)
+
+#-------------------------BOOKING MENU INTERFACE--------------------#
+        #setting up window
+        top = Tk()
+        top.title('Booking Menu')
+        top.geometry("800x270")
+        top.configure(background = 'black')
+
+        #Dropdown menu options 
+        options = [ "First Name", "Surname", "Booking ID", "Session Name", "Rental Name", "Storage Name" "Booking Paid"] 
+          
+        #datatype of menu text 
+        clicked= StringVar() 
+          
+        #initial menu text 
+        clicked.set("First Name")
+
+        #creating buttons
+        b1 = Button(top, text ="Add", bg = "green", command = add)
+        b2 = Button(top, text ="Delete", bg = "green", command = delete)
+        b3 = Button(top, text ="Calculate", bg = "green", command = calculateMenu)
+        b4 = Label(top, text ="Filter by:", bg = "green")
+        drop = OptionMenu( top , clicked, *options, command=search)
+        drop.configure(bg='green')
+        b5 = Button(top, text ="Main Menu", bg = "green", command = destroy)
+
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y = 155, x = 15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y = 240, x = 15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y = 70, x = 510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y = 70, x = 760)
+
+        #creating search feature
+        searchinput = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        searchinput.place(x=220, y=70)
+        #binding the search function to a key release
+        searchinput.bind('<KeyRelease>', search)
+
+
+        searchh = Label(top, text = "search:", width=10, height = 1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+        #creating title
+        frame_h = Frame(top, bg = 'green')
+        frame_h.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+        Label(frame_h, text = 'Booking Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=2, columnspan=2, padx=313, pady=10)
+
+        #defining function for creating GUI Layout
+        def DisplayForm():
+            global ttree
+            global SearcH
+            SearcH = StringVar()
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100,  y=110)
+
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            ttree = ttk.Treeview(MidViewForm,columns=(),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            ttree["columns"] = ('bookingsID', 'customerFirstName', 'customerSurname', 'sessionName', 'rentalEquipmentName', 'storageEquipmentName', 'cost', 'bookingPaid')
+            scrollbary.config(command=ttree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=ttree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+            #setting headings for the columns
+            ttree.heading('bookingsID', text="Booking ID", anchor=W)
+            ttree.heading('customerFirstName', text="First Name", anchor=W)
+            ttree.heading('customerSurname', text="Surname", anchor=W)
+            ttree.heading('sessionName', text="Session Name", anchor=W)
+            ttree.heading('rentalEquipmentName', text="Rental Equipment Name", anchor=W)
+            ttree.heading('storageEquipmentName', text="Storage Equipment Name", anchor=W)
+            ttree.heading('cost', text="Cost", anchor=W)
+            ttree.heading('bookingPaid', text="Has booking been paid", anchor=W)
+
+
+            #setting width of the columns
+            ttree.column('#0', stretch=NO, minwidth=0, width=0)
+            ttree.column('#1', stretch=NO, minwidth=0, width=80)
+            ttree.column('#2', stretch=NO, minwidth=0, width=80)
+            ttree.column('#3', stretch=NO, minwidth=0, width=80)
+            ttree.column('#4', stretch=NO, minwidth=0, width=100)
+            ttree.column('#5', stretch=NO, minwidth=0, width=100)
+            ttree.column('#6', stretch=NO, minwidth=0, width=140)
+            ttree.column('#7', stretch=NO, minwidth=0, width=140)
+            ttree.column('#8', stretch=NO, minwidth=0, width=140)
+
+
+
+            ttree.pack()
+            DisplayData()
+
+        def DisplayData(search_term=""):
+            #Open a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+            #Create a cursor object
+            cursor = connection.cursor()
+            #Clear the current data
+            ttree.delete(*ttree.get_children())
+            #Execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT tblbooking.*, tblcustomer.customerFirstName, tblcustomer.customerSurname, tblsession.sessionName, tblrental.rentalEquipmentName, tblstorage.storageEquipmentName FROM tblbooking JOIN tblcustomer ON tblbooking.customerID = tblcustomer.customerID JOIN tblsession ON tblbooking.sessionID = tblsession.sessionID JOIN tblrental ON tblbooking.rentalID = tblrental.rentalID JOIN tblstorage ON tblbooking.storageID = tblstorage.storageID"
+            if search_term:
+                sql += f" WHERE customerFirstName LIKE '%{search_term}%' OR customerSurname LIKE '%{search_term}%' OR sessionName LIKE '%{search_term}%' OR rentalEquipmentName LIKE '%{search_term}%' OR storageEquipmentName LIKE '%{search_term}%' OR bookingPaid LIKE '%{search_term}%'"
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+
+
+            # Add the search results to the tree viewd
+            bookingDetails = []
+            for row in rows:
+                bookingID = row[0]
+                customerID = row[1]
+                sessionID = row[2]
+                rentalID = row[3]
+                storageID = row[4]
+                cost = row[5]
+                bookingPaid = row[6]
+
+                cursor = connection.cursor()
+                cursor.execute("SELECT customerFirstName, customerSurname FROM tblcustomer WHERE customerID = ?" , [customerID])
+                custInfo = cursor.fetchone()
+
+                cFName = custInfo[0]
+                cSName = custInfo[1]
+                cursor = connection.cursor()
+                cursor.execute("SELECT sessionName FROM tblsession WHERE sessionID = ?", [sessionID])
+                sessionInfo = cursor.fetchone()
+                sessionName = sessionInfo
+                cursor.execute("SELECT rentalEquipmentName FROM tblrental WHERE rentalID = ?", [rentalID])
+                rentalInfo = cursor.fetchone()
+                rentalEquipmentName = rentalInfo
+                cursor.execute("SELECT storageEquipmentName FROM tblstorage WHERE storageID = ?", [storageID])
+                storageInfo = cursor.fetchone()
+                storageEquipmentName = storageInfo
+
+                bookings = [bookingID, cFName, cSName, sessionName, rentalEquipmentName, storageEquipmentName, cost, bookingPaid]
+                bookingDetails.append(bookings)
+
+            clicked1= clicked.get()
+
+            #if statement which correspond order to selected value from filter by menu
+            if clicked1 == "First Name":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[1])
+            elif clicked1 == "Surname":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[2])
+            elif clicked1 == "Booking ID":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[0])
+            elif clicked1 == "Session Name":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[3])
+            elif clicked1 == "Rental Equipment Name":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[4])
+            elif clicked1 == "Storage Equipment Name":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[5])
+            elif clicked1 == "Booking Paid":
+                bookingDetails = sorted(bookingDetails, key=lambda x: x[6])
+
+            #Add the search results to the tree view
+            for row in bookingDetails:
+                ttree.insert("", "end", values=row)
+        
+        #calling function
+        DisplayForm()
+
+
+
+        top.mainloop()
+
+    
+
+
+
+
+#function to display window for user to enter a customer ID in order to view their invoice
+def invoiceMenu():
+
+    #destroyig main menu
+    root.destroy()
+
+    def destroy():
+        top.destroy()
+        openMenu()
+    #code to create the invoice
+    def CusInvoice():
+        #gathering the record from the input and getting its id
+        cCustomerID = customerID1.get()
+        cCustomerID = getIDDD(cCustomerID)
+        connection = sqlite3.connect("kayak.db")
+        cursor = connection.cursor()
+
+
+        #creating window
+        menu = Toplevel()
+        menu.geometry("810x490")
+        menu.title("Customer Invoice")
+        menu.resizable(False, False)
+        menu.config(background = "green")
+
+        #creating title
+        titleFrame = Frame(menu, bg = "green")
+        titleFrame.grid(row=0, column=0, columnspan=2, padx=10,pady=10)
+        Label(titleFrame, text = 'Customer Invoice', font = ("Aptos", 16), bg = "green").grid(row=0, column=0,padx=10, pady=10)
+
+        #frame to hold the headings and the details from the database
+        customerFrame = Frame(menu, highlightbackground="black", highlightthickness=2, bg = "white")
+        customerFrame.grid(row = 1, column=0, columnspan=2, padx=10,pady=10)
+        
+        #customer details inseted into this frame conatiing 8 columns to hold the 8 feilds
+        customerDetails = Frame(customerFrame, bg="White")
+        customerDetails.grid(row = 2, column=0, columnspan = 8, padx=2,pady=10)
+
+        #creating a list to hold the name of the headings which enables the labels to be created using a loop
+        names = ["Customer ID","First Name","Surname","Mobile Number","DOB", "Postcode", "Email"]
+        #c represents the column number which will be incremented whenever a column is created
+        c = 0
+        for item in range(len(names)):
+            Label(customerFrame, text=names[item],width=12,wraplength=100, bg = "white").grid(row=0,column=c)
+            c = c+1
+
+        #Getting all details for the customer and displaying this in the customer details frame
+        for row in cursor.execute("SELECT * FROM tblcustomer WHERE customerID= ?", [cCustomerID]):
+           c = 0
+           for item in row:
+              Label(customerDetails, text=str(item),width=12,wraplength=100, bg = "white").grid(row=0,column=c)
+              c = c + 1
+
+        #Repeating the process for the booking details             
+        bookingFrame = Frame(menu, highlightbackground="black", highlightthickness=2, bg = "white")
+        bookingFrame.grid(row = 2, column=0, padx=2,pady=10, columnspan=2)
+
+        bookingDetails = Frame(bookingFrame, bg = "white")
+        bookingDetails.grid(row=2,column=0,columnspan=5,padx=2,pady=10)
+
+        #List to hold all headings allowing labels to be created using a loop
+        namess = ["Booking ID","Customer ID","Session ID", "Rental ID", "Storage ID","Cost", "Paid"]
+        #c represents the column number which will be incremented whenever a column is created
+        c = 0
+        for item in range(len(namess)):
+            Label(bookingFrame, text=namess[item],width=12,wraplength=100, bg = "white").grid(row=0,column=c)
+            c = c+1
+
+        #calculating the cost of all bookings for the desired customer
+        TotalCost = 0
+        #from the booking details I have selected the fields I want to use and stored these in their own variable
+        r = 1
+        for row in cursor.execute("SELECT * FROM tblbooking WHERE customerID= ?", [cCustomerID]):
+            bookingID = row[0]
+            customerID = row[1]
+            sessionID = row[2]
+            rentalID = row[3]
+            storageID = row[4]
+            cost = row[5]
+            paid = row[6]
+            TotalCost += int(cost)
+
+            #using a second cursor to perform another sql command within my initial loop, getting the name corresponding to the session id
+            cursor1 = connection.cursor()
+           
+            for x in cursor1.execute("SELECT sessionName FROM tblsession WHERE sessionID = ?",[sessionID]):
+                sessionID = x[0]
+
+            if paid == "No":
+                bookings = [bookingID,customerID,sessionID,rentalID,storageID,cost,paid]
+                c=0
+                for item in bookings:
+                    Label(bookingFrame, text=str(item),width=13).grid(row=r,column=c)
+                    c = c + 1
+                r = r + 1
+
+        #Same as above for the payments the customer has made
+        paymentFrame = Frame(menu, highlightbackground="black", highlightthickness=2, bg = "white")
+        paymentFrame.grid(row = 3, column=0, columnspan=2,padx=2,pady=10)
+
+        Label(paymentFrame, text="Payment Amount").grid(row=0,column=0)
+        Label(paymentFrame, text="Payment Date").grid(row=0,column=1)
+
+        totalPayments = 0
+        r = 1
+        for row in cursor.execute("SELECT invoiceAmount, invoiceDate FROM tblinvoice WHERE customerID=?", [cCustomerID]):
+           c = 0
+           payment = row[0]
+           totalPayments += int(payment)
+           for item in row:
+              Label(paymentFrame, text=str(item), bg="White").grid(row=r,column=c)
+              c = c + 1
+           r = r + 1
+
+        
+        connection.commit()
+        connection.close()
+
+
+        pFrame = Frame(menu, highlightbackground="black", highlightthickness=2, bg = "white")
+        pFrame.grid(row = 4, column=0, columnspan=2,padx=2,pady=10)
+
+        #List to hold all headings allowing labels to be created using a loop
+
+        namesss = ["Total Amount Owed","Total Amount Paid"]
+        #c represents the column number which will be incremented whenever a column is created
+        c = 0
+        for item in range(len(namesss)):
+            Label(pFrame, text=namesss[item],width=20,wraplength=100, bg = "white").grid(row=0,column=c)
+            c = c+1
+
+        Label(pFrame, text=("£" + str(TotalCost))).grid(row=1, column = 0)
+        Label(pFrame, text=("£" + str(totalPayments))).grid(row=1, column = 1)
+
+        #function to close the invoice menu
+        def destroy():
+            menu.destroy()
+        #button used to close invoice menu    
+        b4 = Button(menu, text ="Invoice Menu", command = destroy)
+        b4.grid(row = 5, column=0, columnspan=3,padx=2,pady=10)
+
+
+    #invoice menu
+    #setting up menu
+    top = Tk()
+    top.geometry("495x310")
+    top.title("View Customer Invoice")
+    top.resizable(False,False)
+    top.configure(background = "green")
+
+    #creating frames
+    frame_heading = Frame(top, bg = "green")
+    frame_heading.grid(row=0, column=0, columnspan=1, padx=30, pady=20)
+
+    frame_entry = Frame(top, bg = "green")
+    frame_entry.grid(row=1, column=0, columnspan=1, padx=30, pady=20)
+
+    frame_button = Frame(top, bg = "green")
+    frame_button.grid(row=2, column=0, columnspan=1, padx=30, pady=20)
+
+    #creating labels
+    Label(frame_heading, text="Invoice Menu",font=("Aptos", 16), bg = "green").grid(row=0,column=0, padx=15, pady=15)
+
+    Label(frame_entry, text="Enter Customer ID:", bg= "green").grid(row=0,column=0, padx=15, pady=15)
+
+    #creating main menu button which returns the user to the main menu
+    mainmenu_button = Button(frame_button, text = 'Main menu',
+                       width = 12, command = destroy)
+    mainmenu_button.grid(row = 0, column = 0, padx = 15, pady = 15)
+
+    connection = sqlite3.connect("kayak.db")
+    cursor = connection.cursor()
+
+    #gathering records for dropdown menu
+    customers = []
+    for row in cursor.execute("SELECT customerID, customerFirstName, customerSurname FROM tblcustomer"):
+        customers.append(row)
+
+    #creating dropdown menu to select the customer to edit
+    customerID1 = ttk.Combobox(frame_entry, values = customers)
+    customerID1.grid(row = 0, column = 1, padx=10, pady=10)
+
+
+    customerInvoice_button = Button(frame_entry,text="View Invoice", width=10, command=CusInvoice)
+    customerInvoice_button.grid(row=0,column=2, padx=15, pady=15)
+
+#---------------------ADD AND DELETE PAYMENT MENUS-------------------#
+def payment():
+    #destroying main menu 
+    root.destroy()
+    #function that destroys the payment menu
+    def destroy():
+        top.destroy()
+        openMenu()
+    #function that adds a payment to the payment table
+    def add_payment():
+
+        def add():
+
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+            #getting the input from entry fields and setting up variables to hold the data entered
+            CustomerId = ID.get()
+            CustomerID = getIDDD(CustomerId)
+            Amount = amount.get()
+            Date = date.get()
+            #creating a record of all the fields entered
+            payment_record = [CustomerID,Amount,Date]
+
+            validation = True
+            # validation check to ensure data entered is a float
+            try:
+                float(Amount)
+            except:
+                messagebox.showinfo(title = 'Error', message = 'Data entered for Payment Amount must be a float (xx.xx)')
+                validation = False
+            else:
+                float(Amount)
+
+            #validation to ensure that the date is in the form XX/XX/XXXX
+            ValidDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",Date)
+            if (not ValidDate):
+                validation=False
+                messagebox.showinfo(title = 'Error',
+                message = 'Error - Enter Date in form XX/XX/XXXX')
+
+            presencePassed = presenceCheck(payment_record)
+            #presence check for entry fields
+            if presencePassed:
+                if validation == True:
+                    #record added to invoice table
+                    cursor.execute("INSERT INTO tblinvoice VALUES(Null,?,?,?)", payment_record)
+                    connection.commit()
+                    #creating message to confirm this
+                    messagebox.showinfo(title = 'Payment Made',
+                    message = 'Payment successfully made')
+                    topAdd.destroy()
+            else:
+                #creating error message if presence check is not passed
+                messagebox.showinfo(title = 'Error',
+                message = 'Error - All fields must be filled correctly')
+
+        #add window
+        #creating the window
+        topAdd = Tk()
+        topAdd.geometry("350x250")
+        topAdd.title("Add Payment")
+        topAdd.resizable(False,False)
+        topAdd.configure(background = "green")
+
+        #creating the buttons
+        framebuttons = Frame(topAdd, bg = "green")
+        framebuttons.grid(row=2, column=1, columnspan = 1, padx = 10, pady = 10)
+
+        #creating a frame for the title
+        framet = Frame(topAdd, bg = "green")
+        framet.grid(row = 1,column=1, columnspan=1,padx=10, pady=10)
+
+        #creating the labels
+        Label(framet, text = 'Add Payment', font=("Aptos", 16), bg = "green").grid(row=1, column=1, columnspan=1, padx=10, pady=10)
+
+        Label(framebuttons, text = 'Customer ID: ', bg = "green").grid(row = 1, column = 0, padx = 5, pady = 5)
+        Label(framebuttons, text = 'Payment Amount: ', bg = "green").grid(row = 2, column = 0, padx = 5, pady = 5)
+        Label(framebuttons, text = 'Payment Date: ', bg = "green").grid(row = 3, column = 0, padx = 5, pady = 5)
+
+        connection = sqlite3.connect("kayak.db")
+        cursor1 = connection.cursor()
+
+        #creating list to store records of the customer table
+        customers = []
+        for row in cursor1.execute("SELECT customerID, customerFirstName, customerSurname FROM tblcustomer"):
+            customers.append(row)
+        
+        #dropdown to select the customer to edit
+        ID = ttk.Combobox(framebuttons, values = customers)
+        ID.grid(row = 1, column = 1, padx=10, pady=10)
+        
+        #creating entry fields
+        amount = Entry(framebuttons, width = 23)
+        amount.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+        date = Entry(framebuttons, width = 23)
+        date.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+        #creating the submit button
+        submit = Frame(topAdd, bg = "green")
+        submit.grid(row=8, column=0, columnspan = 2, padx = 5, pady = 5)
+
+        submitButton = Button(submit, text = 'Submit', width = 15, command = add)
+        submitButton.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+    #function to delete a payment from the payment table
+    def delete_payment():
+
+        def delete():
+            conn = sqlite3.connect('kayak.db')
+            with conn:
+                cursor = conn.cursor()
+                #getting the id from the record selected from the dropdown menu
+                payment_ID = paymentIDd.get()
+                IDsearch = getIDDD(payment_ID)
+                #deleting the record from the database
+                cursor.execute("DELETE FROM tblinvoice WHERE invoiceID =" + IDsearch)
+                #creating message to confirm this
+                messagebox.showinfo(title = "Delete Payment", message = "Payment successfully deleted") 
+                conn.commit()
+                topDelete.destroy()
+
+            #delete payment menu
+        #creating the window
+        topDelete = Tk()
+        topDelete.geometry("320x200")
+        topDelete.title("Delete Payment")
+        topDelete.resizable(True,True)
+        topDelete.configure(background = "green")
+        
+        #creating te frames
+        frame = Frame(topDelete, bg = "green")
+        frame.grid(row=2, column=1, columnspan = 1, padx = 10, pady = 10)
+
+        framet = Frame(topDelete, bg = "green")
+        framet.grid(row = 1,column=1, columnspan=1,padx=10, pady=10)
+        #creating the labels
+        Label(framet, text = 'Delete Payment', font=("Aptos", 16), bg = "green").grid(row=1, column=1, columnspan=1, padx=10, pady=10)
+
+        Label(frame, text="Payment ID:", bg = "green").grid(row=0,column=0, padx=15, pady=15)
+
+        connection = sqlite3.connect("kayak.db")
+        cursorr = connection.cursor()
+
+
+        payments_list = []
+
+        #gather the rows from the invoice table and store them in a list
+        rows = cursorr.execute("SELECT customerID, invoiceID FROM tblinvoice").fetchall()
+
+        #for loops to create values for the drop down and getting the invoiceID
+        for row in rows:
+            custID = row[0]
+            invoiceID = row[1]
+            for row1 in cursorr.execute("SELECT customerFirstName, customerSurname FROM tblcustomer WHERE customerID = ?", [custID]):
+                fname = row1[0]
+                sname = row1[1]
+                #append a formatted string that includes the invoice ID, first name, and surname to the list
+                payments_list.append(f"{invoiceID} - {fname} {sname}")
+
+        paymentIDd = ttk.Combobox(frame, values=payments_list)
+        paymentIDd.grid(row=0, column=1, padx=5, pady=5)
+
+        delete = Button(frame, text = 'Submit', width = 10, command = delete)
+        delete.grid(row = 1, column = 0, padx = 30, pady = 15)
+
+    #payment menu
+    #payment window
+    top = Tk()
+    top.geometry("415x180")
+    top.title("Payment Menu")
+    top.resizable(False,False)
+    top.configure(background = "green")
+    
+    #creating the frames
+    frame_heading = Frame(top, bg = "green")
+    frame_heading.grid(row=0, column=0, columnspan=1, padx=30, pady=20)
+
+    frame_button = Frame(top, bg = "green")
+    frame_button.grid(row=1, column=0, columnspan=1, padx=30, pady=20)
+
+    #creating the buttons
+    add_button = Button(frame_button, text = 'Add Payment',
+                       width = 12, command = add_payment)
+    add_button.grid(row = 0, column = 1, padx = 15, pady = 15)
+
+    delete_button = Button(frame_button, text = 'Delete Payment',
+                       width = 12, command = delete_payment)
+    delete_button.grid(row = 0, column = 2, padx = 15, pady = 15)
+
+    mainmenu_button = Button(frame_button, text = 'Main Menu',
+                       width = 12, command = destroy)
+    mainmenu_button.grid(row = 0, column = 3, padx = 15, pady = 15)
+
+    Label(frame_heading, text="Payment Menu",font=("Aptos", 16), bg = "green").grid(row=0,column=0, padx=15, pady=15)
+
+
+
+#---------------LOGIN SCREEN---------#
+#function for the login feature
+def login():
+    connection = sqlite3.connect("kayak.db")
+    cursor = connection.cursor()
+    cursor.execute('SELECT instructorRole FROM tblinstructors WHERE instructorUsername=? AND instructorPassword =?',(entryUsername.get(),entryPassword.get()))
+    result = cursor.fetchone()
+
+    #binary earch function used to accept a list of the userdata
+    #the username and password that has been entered, low is the lowest value in the list to be searched amd high the max index of the list to be searched
+    def binarySearch(userList, username, password, low, high):
+
+        if high >= low:
+            mid = (low + high)//2
+
+            if mid > (len(userList)-1):
+                return False
+            
+            elif (userList[mid][0] > username):
+                return binarySearch(userList, username, password, low, mid-1)
+            elif (userList[mid][0] < username):
+                return binarySearch(userList, username, password, mid+1, high)
+            else:
+                if userList[mid][1] == password:
+                    return True
+                else:
+                    return False
+        else:
+            return False
+    
+    #creating a list of all login details
+    connection = sqlite3.connect("kayak.db")
+    cursor = connection.cursor()
+    users = []
+    for row in cursor.execute("SELECT instructorUsername, instructorPassword FROM tblinstructors"):
+        users.append(row)
+
+    #Apply bubble sort to users
+    #Sort the data by surname
+    for i in range(len(users)-1):
+        for j in range(len(users)-i-1):
+            if users[j][0] > users[j+1][0]:
+                users[j], users[j+1] = users[j+1], users[j]
+
+    #creating variables based on the user entry fields
+    pword = entryPassword.get()
+    uname = entryUsername.get()
+
+    #creating a variable used to store a value of true or false depending on if a record has been found that matches the details entered
+    found = binarySearch(users, uname, pword, 0, len(users))
+
+    #If the info entered does not match a record in the database then an error message is shown
+    if result == None:
+    #If the login details entered does not match a record in the database then an error message is shown
+        messagebox.showinfo(title="Incorrect username or password", message="Error - you have entered the wrong username or password")
+    else:
+        #user is redirected to the main menu if they enter the correct details
+        #if the user is a leader then they are redirected to a main menu which only has access to a small amount of the database
+        #if they arent then they are redirected to the normal main menu with access to the whole database
+        roleCheck = result[0]
+        #global variable is requiered so that it can be called upon again later when required
+        global ans
+        if roleCheck == "Leader":
+            root.destroy()
+            #ans 2 corresponds to the leader menu
+            ans = 2
+            openMenu()
+        else:
+            root.destroy()
+            #ans 1 corresponds to the big main menu
+            ans = 1
+            openMenu()
+
+#------------INTERFACE-------------#
+
+#creating the window
+root = Tk()
+root.geometry('207x300')
+root.title('Login Screen')
+root.resizable (False, False)
+root.configure(background = 'black')
+
+#creating frame
+frameEntry = Frame(root, bg = 'green')
+frameEntry.grid(row=1, column=0, columnspan = 2,
+                 padx = 10, pady = 10)
+
+#creating labels
+Label(frameEntry, text = 'username: ', bg = 'green').grid(row = 1,
+      column = 0, padx = 5, pady = 5)
+
+Label(frameEntry, text = 'password: ', bg = 'green').grid(row = 2,
+      column = 0, padx = 5, pady = 5)
+
+#creating entry fields for user to enter in the login details
+entryUsername = Entry(frameEntry, width = 15, bg = 'white')
+entryUsername.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+entryPassword = Entry(frameEntry, width=15, bg = 'white',
+                       show = '*')
+entryPassword.grid(row = 2, column = 1, padx = 10, pady = 10)
+
+#creating submit button
+submitButton = Button(frameEntry, text = 'login',
+                       width = 8, command = login)
+submitButton.grid(row = 3, padx = 10, pady = 10, column = 0, columnspan = 2)
+
+#inserting the club logo into the login window
+logo = PhotoImage(file = "GPCL2.PNG")
+smaller_image = logo.subsample(4, 4)
+imageLabel = Label(image=smaller_image , bg = 'black')
+imageLabel.grid(row = 0, column = 0, columnspan = 2)
+
+
+#---------------------RENTAL MENU----------------#
+def rentalMenu():
+        #destroying main menu
+        root.destroy()
+        #function that destroys the main menu & opens the rental menu
+        def destroy():
+            top.destroy()
+            openMenu()
+
+        def edit():
+                #edits a record in the database
+                def EditRental():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #getting the field, value, and search entry field and assigning them to new variables
+                        field_edit = field.get()
+                        value_edit = value.get()
+                        search_edit = search.get()
+
+                        if search_edit != "":  #checks if all fields are filled
+                            #assigns the id field of the selected record to a vriable                            
+                            rRentalID = getIDD(search_edit)
+
+                            #vaildation checks for the new value entered
+                            validation = True
+                            #presence checks
+                            presenceCheck(field_edit)
+                            presenceCheck(value_edit)
+                            presenceCheck(search_edit)
+
+                            if field_edit == 'retalTime':
+                                #validation check to ensure that the time is entered in the correct format (XX:XX)
+                                ValidTime = re.match("[0-9]{2}[:]{1}[0-9]{2}",value_edit)
+                                if (not ValidTime):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter time in form XX:XX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift() 
+                                else:
+                                    #updates the database if validation check is passed
+                                    cursor.execute(f"UPDATE tblrental SET {field_edit} = '{value_edit}' WHERE rentalID = {rRentalID}")
+                                    messagebox.showinfo(title = "Edit Rental", message = "You have successfully changed the rental details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in session menu
+                                    DisplayForm()
+
+                            elif field_edit != 'rentalDate':
+                                cursor.execute(f"UPDATE tblrental SET {field_edit} = '{value_edit}' WHERE rentalID = {rRentalID}") # updates the database
+                                messagebox.showinfo(title = "Edit Rental", message = "You have changed the rental details")
+
+                                connection.commit()
+                                connection.close()
+                                #close edit window
+                                rootEdit.destroy()
+                                #update form in rental menu
+                                DisplayForm()
+                            else:
+                                #format check for the Date
+                                ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",value_edit)
+                                if (not ValidDOB):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter data in form XX/XX/XXXX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift()
+                                else:
+                                    #updates the database if the format check for Date is passed                                    
+                                    cursor.execute(f"UPDATE tblrental SET {field_edit} = '{value_edit}' WHERE rentalID = {rRentalID}")
+                                    messagebox.showinfo(title = "Edit Rental", message = "You have successfully changed the rental details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in rental menu
+                                    DisplayForm()
+                        else:
+                            #runs if presence check isnt passed
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - All fields not filled')
+                            #placing the edit window as top again
+                            rootEdit.lift()
+
+                #the edit window
+                rootEdit = Tk()
+                global value, field, search
+                rootEdit.geometry('306x195')
+                rootEdit.title('Edit Rental')
+                rootEdit.resizable (False,False)
+                rootEdit.configure(background = 'black')
+
+                #creating heading
+                frameEdit = Frame(rootEdit, bg = 'green')
+                frameEdit.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+                Label(frameEdit, text = 'Rental Edit', font=('Aptos', 16), width = 20, bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                #search of rental database performed to get details for dropdown menus
+                rentalll = []
+                for row in cursor.execute("SELECT rentalEquipmentName, rentalID FROM tblrental"):
+                    details = str(row[0]) + " " + str(row[1])
+                    rentalll.append(details)
+                #creating dropdown menus
+                search = ttk.Combobox(rootEdit, values = rentalll)
+                search.place(x = 153, y = 70)
+                Label(rootEdit, text = 'Rental name', width = 19, bg = 'green').place(x = 10, y = 70)
+
+                field = ttk.Combobox(rootEdit, text='a')
+                field.place(x = 153, y = 100)
+                field.config(values=('rentalID','rentalEquipmentName','rentalDate','rentalTime','rentalCustomerName','rentalReturn','rentalQty','rentalCost'))
+
+                # creating entry field for the user to enter the new value
+                Label(rootEdit, text = 'Field to change', width = 19, bg = 'green').place(x = 10, y = 100)
+                value = Entry(rootEdit, width=23, bg="White", borderwidth=2, relief="ridge")
+                value.place(x = 153, y = 130)
+                Label(rootEdit, text = 'New Value', width = 19, bg = 'green').place(x = 10, y = 130)
+
+                #creating submit button which will save the changes to the instructor database
+                submitB = Button(rootEdit, text = 'Submit', width = 25, bg = 'green', command = EditRental)
+                submitB.place(x = 59, y = 160)
+
+        def add():
+                #adds record to instructor database
+                def addRental():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #setting up variables to hold the data entered
+                        requipmentname = equipmentname.get()
+                        rdate = rrdate.get()
+                        rtime = rrtime.get()
+                        rcustomername = customername.get()
+                        rrreturn = rreturn.get()
+                        rqty = qty.get()
+                        rcost = rrcost.get()
+                        
+                        #creating a list that will enable the values to be stored in the database
+                        rentalRec = [requipmentname,rdate,rtime,rcustomername,rrreturn,rqty,rcost]
+
+                        validation = True
+
+                        ####VALIDATION CHECKS####
+
+                        #length checks
+                        if len(requipmentname) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Rental Name must be below 15 characters')
+                            root_add.lift()
+
+                        if len(rcustomername) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Customer Name must be below 15 characters')
+                            root_add.lift()
+                            
+                        ##Validation format check for the time
+                        ValidTime = re.match("[0-9]{2}[:]{1}[0-9]{2}",rtime)
+                        if (not ValidTime) or len(rtime)>5:
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter Time in form XX:XX')
+                            root_add.lift()
+                        
+                        ValidReturnTime = re.match("[0-9]{2}[:]{1}[0-9]{2}",rrreturn)
+                        if (not ValidReturnTime) or len(rrreturn)>5:
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter Return Time in form XX:XX')
+                            root_add.lift()
+
+                        #Validation for the rental date
+                        ValidDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",rdate)
+                        if (not ValidDate):
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter Date in form XX/XX/XXXX')
+                            root_add.lift()
+                            
+                        #check that all characters are integers
+                        try:
+                            float(rcost)
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Cost of Rental must be a float (xx.xx)')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            float(rcost)
+                            root_add.lift()
+                        try:
+                            int(rqty)
+                            root_add.lift()
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Number of Items must be an integer')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            int(rqty)
+
+                        if validation == True:
+                            #presence check
+                            presencePassed = presenceCheck(rentalRec)
+                            if presencePassed:
+                                if validation == True:
+                                    #adds values in the list rentalRec to the rental database as a new record                                    
+                                    cursor.execute("INSERT INTO tblrental VALUES(Null,?,?,?,?,?,?,?)", rentalRec)
+                                    connection.commit()
+                                    connection.close()
+                                    messagebox.showinfo(title = 'Rental Created', message = 'Rental successfully created')
+                                    # destroy add window
+                                    root_add.destroy()
+                                    #update form in rental menu
+                                    DisplayForm()
+                        else:
+                            messagebox.showinfo(title = 'Error', message = 'Error - All fields must be filled correctly')
+                            root_add.lift()
+                        
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry('413x437')
+                root_add.title('Rental Add Menu')
+                root_add.resizable(False, False)
+                root_add.configure(background = 'black')
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = 'green')
+                frame_heading.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #frame to hold the entry feilds and buttons
+                frame_add = Frame(root_add, bg = "green")
+                frame_add.grid(row=2, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #creating the labels
+                Label(frame_heading, text = 'Rental Add Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+                Label(frame_add, text = 'Enter rental equipment name', bg = 'green').grid(row = 1, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter date', bg = 'green').grid(row = 2, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter time of pick up (XX:XX)', bg = 'green').grid(row = 3, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter customer name', bg = 'green').grid(row = 4, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter time of return (XX:XX)', bg = 'green').grid(row = 5, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter number of equipment needed', bg = 'green').grid(row = 6, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter cost (£)', bg = 'green').grid(row = 7, column = 0, padx = 5, pady = 5)
+
+
+                #creating entry fields
+                equipmentname = Entry(frame_add, width = 25, bg = 'white')
+                equipmentname.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+                rrdate = Entry(frame_add, width = 25, bg = 'white')
+                rrdate.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+                rrtime = Entry(frame_add, width = 25, bg = 'white')
+                rrtime.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+                customername = Entry(frame_add, width = 25, bg = 'white')
+                customername.grid(row = 4, column = 1, padx = 5, pady = 5)
+
+                rreturn = Entry(frame_add, width = 25, bg = 'white')
+                rreturn.grid(row = 5, column = 1, padx = 5, pady = 5)
+
+                qty = Entry(frame_add, width = 25, bg = 'white')
+                qty.grid(row = 6, column = 1, padx = 5, pady = 5)
+
+                rrcost = Entry(frame_add, width = 25, bg = 'white')
+                rrcost.grid(row = 7, column = 1, padx = 5, pady = 5)
+
+                # creating the submit button
+                submit = Button(frame_add, text = 'Submit', width = 15, command = addRental)
+                submit.grid(row = 8, column = 1, padx = 5, pady = 5)
+
+        def delete():
+
+            def deleteRental():
+                #function that permanently deletes a record form the rental database
+                
+                # get the search input from the entry field
+                Rental_ID = search.get()
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+                #getting the id
+                RID = Rental_ID.split()
+                primary_key_field = RID[1]
+                #deletes the record from the database which contains the id
+                cursor.execute("DELETE FROM tblrental WHERE rentalID =" + primary_key_field)
+                #deletes the record from the database which contains the id
+                messagebox.showinfo(title = 'Rental Delete', message = 'Rental has been successfully deleted from the database')
+                connection.commit()
+                connection.close()
+                #close delete form & update form in main rental menu
+                rdelete.destroy()
+                DisplayForm()
+            
+            #customer delete window
+            rdelete = Tk()
+            rdelete.geometry('300x135')
+            rdelete.title('rental delete')
+            rdelete.resizable(False,False)
+            rdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(rdelete, bg = "green")
+            dframe.grid(row = 1, column = 1, columnspan = 3, padx = 10, pady = 10)
+            Label(dframe, text = "Rental Delete Menu", font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2, padx=36, pady=10)
+
+             #label for entry field
+            Label(rdelete, text = "Select rental", bg = "green", width = 16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            rentalList = []
+
+            for row in cursor.execute("SELECT rentalEquipmentName, rentalID FROM tblrental"):
+                    details = str(row[0]) + " " + str(row[1])                
+                    rentalList.append(details)
+                
+            #creating dropdown menu
+            search = ttk.Combobox(rdelete, values = rentalList)
+            search.place(x=129,y=70)
+
+            #creating delete button
+            Button(rdelete, text = "Submit", width = 13, bg = "green", command = deleteRental).place(x=86,y=100)
+
+        def search(event):
+          #getting the search input
+          searchterm = searchinput.get()
+          search_term = str(searchterm)
+
+          #update the display of the database
+          DisplayData(search_term)
+
+        #----------------RENTAL MENU INTERFACE---------#
+        #setting up window
+        top = Tk()
+        top.title('Rental Menu')
+        top.geometry("835x270")
+        top.configure(background = 'black')
+
+        #Dropdown menu options 
+        options = [ "Rental Equipment Name", "Rental Cost", "Rental ID"]
+
+        #datatype of menu text
+        clicked = StringVar()
+
+        #initial menu text 
+        clicked.set("Rental name")
+
+        #creating buttons
+        b1 = Button(top, text ="Add", bg = "green", command = add)
+        b2 = Button(top, text ="Delete", bg = "green", command = delete)
+        b3 = Button(top, text ="Edit", bg = "green", command = edit)
+        b4 = Label(top, text ="Filter by:", bg = "green")
+        drop = OptionMenu( top , clicked, *options, command=search)
+        drop.configure(bg='green')
+        b5 = Button(top, text ="Main Menu", bg = "green", command = destroy)
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y = 155, x = 15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y = 240, x = 15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y = 70, x = 510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y = 70, x = 790)
+
+        #creating search feature
+        searchinput = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        searchinput.place(x=220, y=70)
+        searchinput.bind('<KeyRelease>', search)
+
+        searchh = Label(top, text = "search:", width=10, height = 1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+        #creating title
+        frame_h = Frame(top, bg = 'green')
+        frame_h.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+        Label(frame_h, text = 'Rental Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=2, columnspan=2, padx=338, pady=10)
+
+        #defining function for creating GUI layout
+        def DisplayForm():
+            global ttree
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100,  y=110)
+
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            ttree = ttk.Treeview(MidViewForm,columns=('rentalID','rentalEquipmentName','rentalDate','rentalTime','rentalCustomerName','rentalReturn','rentalQty','rentalCost'),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=ttree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=ttree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+
+            #setting headings for the columns
+            ttree.heading('rentalID', text="Rental ID", anchor=W)
+            ttree.heading('rentalEquipmentName', text="Equipment Name", anchor=W)
+            ttree.heading('rentalDate', text="Date", anchor=W)
+            ttree.heading('rentalTime', text="Time", anchor=W)
+            ttree.heading('rentalCustomerName', text="Customer Name", anchor=W)
+            ttree.heading('rentalReturn', text="Return Time", anchor=W)
+            ttree.heading('rentalQty', text="No. of Items Needed", anchor=W)
+            ttree.heading('rentalCost', text="Cost (£)", anchor=W)
+
+            #setting width of the columns
+            ttree.column('#0', stretch=NO, minwidth=0, width=0)
+            ttree.column('#1', stretch=NO, minwidth=0, width=50)
+            ttree.column('#2', stretch=NO, minwidth=0, width=80)
+            ttree.column('#3', stretch=NO, minwidth=0, width=80)
+            ttree.column('#4', stretch=NO, minwidth=0, width=80)
+            ttree.column('#5', stretch=NO, minwidth=0, width=80)
+            ttree.column('#6', stretch=NO, minwidth=0, width=80)
+            ttree.column('#7', stretch=NO, minwidth=0, width=80)
+            ttree.column('#8', stretch=NO, minwidth=0, width=100)
+
+            ttree.pack()
+            DisplayData()
+
+        def DisplayData(search_term=""):
+            # Open a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+            # Create a cursor object
+            cursor = connection.cursor()
+            # Clear the current data
+            ttree.delete(*ttree.get_children())
+            # Execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT * FROM tblrental"
+            if search_term:
+                sql += f" WHERE rentalCustomerName LIKE '%{search_term}%' "
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            #getting the value that user wants display to be filtered by
+            clicked1= clicked.get()
+
+             #if statement which correspond order to selected value from filter by menu
+            if clicked1 == "Rental equipment name":
+                rows = sorted(rows, key=lambda x: x[1])
+            elif clicked1 == "Rental cost":
+                rows = sorted(rows, key=lambda x: x[4])
+            elif clicked1 == "Rental ID":
+                rows = sorted(rows, key=lambda x: x[0])
+            elif clicked1 == "Rental date":
+                rows = sorted(rows, key=lambda x: x[8])
+            # Add the search results to the tree view
+            for row in rows:
+                ttree.insert("", "end", values=row)
+
+        #calling function
+        DisplayForm()
+
+        top.mainloop() 
+
+
+
+#---------------------STORAGE MENU----------------#
+def storageMenu():
+        #destroying main menu
+        root.destroy()
+        #function that destroys the instructor menu & opens the storage menu
+        def destroy():
+            top.destroy()
+            openMenu()
+
+        def edit():
+                #edits a record in the database
+                def EditStorage():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #getting the field, value, and search entry field and assigning them to new variables
+                        field_edit = field.get()
+                        value_edit = value.get()
+                        search_edit = search.get()
+
+                        if search_edit != "":  #checks if all fields are filled
+                            #assigns the id field of the selected record to a vriable                            
+                            sStorageID = getIDD(search_edit)
+
+                            #vaildation checks for the new value entered
+                            validation = True
+                            #presence checks
+                            presenceCheck(field_edit)
+                            presenceCheck(value_edit)
+                            presenceCheck(search_edit)
+
+                            if field_edit == 'storageReturnDate':
+                                #validation check to ensure that the return date is entered in the correct format (XX:XX)
+                                ValidReturn = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",value_edit)
+                                if (not ValidReturn):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter return date in form XX/XX/XXXX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift() 
+                                else:
+                                    #updates the database if validation check is passed
+                                    cursor.execute(f"UPDATE tblstorage SET {field_edit} = '{value_edit}' WHERE storageID = {sStorageID}")
+                                    messagebox.showinfo(title = "Edit Storage", message = "You have successfully changed the storage details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in storage menu
+                                    DisplayForm()
+
+                            elif field_edit != 'storageDate':
+                                cursor.execute(f"UPDATE tblstorage SET {field_edit} = '{value_edit}' WHERE storageID = {sStorageID}") # updates the database
+                                messagebox.showinfo(title = "Edit Storage", message = "You have changed the storage details")
+
+                                connection.commit()
+                                connection.close()
+                                #close edit window
+                                rootEdit.destroy()
+                                #update form in storage menu
+                                DisplayForm()
+                            else:
+                                #format check for the Date
+                                ValidDOB = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",value_edit)
+                                if (not ValidDOB):
+                                    validation=False
+                                    messagebox.showinfo(title = 'Error',
+                                    message = 'Error - Enter data in form XX/XX/XXXX')
+                                    #placing the edit window as top again
+                                    rootEdit.lift()
+                                else:
+                                    #updates the database if the format check for Date is passed                                    
+                                    cursor.execute(f"UPDATE tblstorage SET {field_edit} = '{value_edit}' WHERE rentalID = {sStorageID}")
+                                    messagebox.showinfo(title = "Edit Storage", message = "You have successfully changed the rental details")
+                                    connection.commit()
+                                    connection.close()
+                                    #close edit window
+                                    rootEdit.destroy()
+                                    #update form in storage menu
+                                    DisplayForm()
+                        else:
+                            #runs if presence check isnt passed
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - All fields not filled')
+                            #placing the edit window as top again
+                            rootEdit.lift()
+
+                #the edit window
+                rootEdit = Tk()
+                global value, field, search
+                rootEdit.geometry('306x195')
+                rootEdit.title('Edit Storage')
+                rootEdit.resizable (False,False)
+                rootEdit.configure(background = 'black')
+
+                #creating heading
+                frameEdit = Frame(rootEdit, bg = 'green')
+                frameEdit.grid(row=1, column=1, columnspan=3, padx=10, pady=10)
+                Label(frameEdit, text = 'Storage Edit', font=('Aptos', 16), width = 20, bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+
+                #search of storage database performed to get details for dropdown menus
+                ssstorage = []
+                for row in cursor.execute("SELECT storageEquipmentName, storageID FROM tblstorage"):
+                    details = str(row[0]) + " " + str(row[1])
+                    ssstorage.append(details)
+                #creating dropdown menus
+                search = ttk.Combobox(rootEdit, values = ssstorage)
+                search.place(x = 153, y = 70)
+                Label(rootEdit, text = 'Storage Equipment Name', width = 19, bg = 'green').place(x = 10, y = 70)
+
+                field = ttk.Combobox(rootEdit, text='a')
+                field.place(x = 153, y = 100)
+                field.config(values=('storageID','storageEquipmentName','storageDate','storageSpace','storageCustomerName','storageReturn','storageItemQty','storageCost'))
+
+                # creating entry field for the user to enter the new value
+                Label(rootEdit, text = 'Field to change', width = 19, bg = 'green').place(x = 10, y = 100)
+                value = Entry(rootEdit, width=23, bg="White", borderwidth=2, relief="ridge")
+                value.place(x = 153, y = 130)
+                Label(rootEdit, text = 'New Value', width = 19, bg = 'green').place(x = 10, y = 130)
+
+                #creating submit button which will save the changes to the instructor database
+                submitB = Button(rootEdit, text = 'Submit', width = 25, bg = 'green', command = EditStorage)
+                submitB.place(x = 59, y = 160)
+
+        def add():
+                #adds record to instructor database
+                def addStorage():
+                        connection = sqlite3.connect("kayak.db")
+                        cursor = connection.cursor()
+
+                        #setting up variables to hold the data entered
+                        sequipmentname = ssequipmentname.get()
+                        sdate = ssdate.get()
+                        sspace = ssspace.get()
+                        scustomername = sscustomername.get()
+                        sreturn = ssreturn.get()
+                        sqty = ssqty.get()
+                        scost = sscost.get()
+                        
+                        #creating a list that will enable the values to be stored in the database
+                        storageRec = [sequipmentname,sdate,sspace,scustomername,sreturn,sqty,scost]
+
+                        validation = True
+
+                        ####VALIDATION CHECKS####
+
+                        #length checks
+                        if len(sequipmentname) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Storage Equipment Name must be below 15 characters')
+                            root_add.lift()
+
+                        if len(scustomername) > 15:
+                            validation = False
+                            messagebox.showinfo(title = 'Error', message = 'Length of Customer Name must be below 15 characters')
+                            root_add.lift()
+
+                        #Validation for the storage date
+                        ValidDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",sdate)
+                        if (not ValidDate):
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter date in form XX/XX/XXXX')
+                            root_add.lift()
+                        
+                        ValidRDate = re.match("[0-9]{2}[/]{1}[0-9]{2}[/]{1}[0-9]{4}",sreturn)
+                        if (not ValidRDate):
+                            validation=False
+                            messagebox.showinfo(title = 'Error',
+                            message = 'Error - Enter date in form XX/XX/XXXX')
+                            root_add.lift()
+                            
+                        #check that all characters are integers
+                        try:
+                            float(scost)
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Cost of Rental must be a float (xx.xx)')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            float(scost)
+                            root_add.lift()
+                        try:
+                            int(sqty)
+                            root_add.lift()
+                        except:
+                            messagebox.showinfo(title = 'Error', message = 'Data entered for Number of Items must be an integer')             
+                            validation=False
+                            root_add.lift()
+                        else:
+                            int(sqty)
+
+                        if validation == True:
+                            #presence check
+                            presencePassed = presenceCheck(storageRec)
+                            if presencePassed:
+                                if validation == True:
+                                    #adds values in the list storageRec to the storage database as a new record                                    
+                                    cursor.execute("INSERT INTO tblstorage VALUES(Null,?,?,?,?,?,?,?)", storageRec)
+                                    connection.commit()
+                                    connection.close()
+                                    messagebox.showinfo(title = 'Storage Created', message = 'Storage successfully created')
+                                    # destroy add window
+                                    root_add.destroy()
+                                    #update form in storage menu
+                                    DisplayForm()
+                        else:
+                            messagebox.showinfo(title = 'Error', message = 'Error - All fields must be filled correctly')
+                            root_add.lift()
+                        
+                #setting up the window
+                root_add = Tk()
+                root_add.geometry('413x437')
+                root_add.title('Storage Add Menu')
+                root_add.resizable(False, False)
+                root_add.configure(background = 'black')
+
+                #creating the frames
+                #frame to hold the title
+                frame_heading = Frame(root_add, bg = 'green')
+                frame_heading.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #frame to hold the entry feilds and buttons
+                frame_add = Frame(root_add, bg = "green")
+                frame_add.grid(row=2, column=1, columnspan = 2,padx = 10, pady = 10)
+
+                #creating the labels
+                Label(frame_heading, text = 'Storage Add Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+                Label(frame_add, text = 'Enter Storage Equipment Name', bg = 'green').grid(row = 1, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Date', bg = 'green').grid(row = 2, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Slot Number', bg = 'green').grid(row = 3, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Customer Name', bg = 'green').grid(row = 4, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Date of Return (XX:XX)', bg = 'green').grid(row = 5, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Number of Spaces needed', bg = 'green').grid(row = 6, column = 0, padx = 5, pady = 5)
+                Label(frame_add, text = 'Enter Cost (£)', bg = 'green').grid(row = 7, column = 0, padx = 5, pady = 5)
+
+
+                #creating entry fields
+                ssequipmentname = Entry(frame_add, width = 25, bg = 'white')
+                ssequipmentname.grid(row = 1, column = 1, padx = 5, pady = 5)
+
+                ssdate = Entry(frame_add, width = 25, bg = 'white')
+                ssdate.grid(row = 2, column = 1, padx = 5, pady = 5)
+
+                ssspace = Entry(frame_add, width = 25, bg = 'white')
+                ssspace.grid(row = 3, column = 1, padx = 5, pady = 5)
+
+                sscustomername = Entry(frame_add, width = 25, bg = 'white')
+                sscustomername.grid(row = 4, column = 1, padx = 5, pady = 5)
+
+                ssreturn = Entry(frame_add, width = 25, bg = 'white')
+                ssreturn.grid(row = 5, column = 1, padx = 5, pady = 5)
+
+                ssqty = Entry(frame_add, width = 25, bg = 'white')
+                ssqty.grid(row = 6, column = 1, padx = 5, pady = 5)
+
+                sscost = Entry(frame_add, width = 25, bg = 'white')
+                sscost.grid(row = 7, column = 1, padx = 5, pady = 5)
+
+                # creating the submit button
+                submit = Button(frame_add, text = 'Submit', width = 15, command = addStorage)
+                submit.grid(row = 8, column = 1, padx = 5, pady = 5)
+
+        def delete():
+
+            def deleteStorage():
+                #function that permanently deletes a record form the storage database
+                
+                # get the search input from the entry field
+                Storage_ID = search.get()
+                connection = sqlite3.connect("kayak.db")
+                cursor = connection.cursor()
+                #getting the id
+                SID = Storage_ID.split()
+                primary_key_field = SID[1]
+                #deletes the record from the database which contains the id
+                cursor.execute("DELETE FROM tblstorage WHERE storageID =" + primary_key_field)
+                #deletes the record from the database which contains the id
+                messagebox.showinfo(title = 'Storage Delete', message = 'Storage has been successfully deleted from the database')
+                connection.commit()
+                connection.close()
+                #close delete form & update form in main storage menu
+                sdelete.destroy()
+                DisplayForm()
+            
+            #customer delete window
+            sdelete = Tk()
+            sdelete.geometry('300x135')
+            sdelete.title('storage delete')
+            sdelete.resizable(False,False)
+            sdelete.configure(bg = 'black')
+
+            #creating heading
+            dframe = Frame(sdelete, bg = "green")
+            dframe.grid(row = 1, column = 1, columnspan = 3, padx = 10, pady = 10)
+            Label(dframe, text = "Storage Delete Menu", font = ('Aptos', 16), bg = "green").grid(row=1, column=1, columnspan=2, padx=36, pady=10)
+
+            #label for entry field
+            Label(sdelete, text = "Select storage", bg = "green", width = 16).place(x=10, y=70)
+
+            #gathering values for dropdown menu
+            connection = sqlite3.connect("kayak.db")
+            cursor = connection.cursor()
+
+            storageList = []
+
+            for row in cursor.execute("SELECT storageEquipmentName, storageID FROM tblstorage"):
+                    details = str(row[0]) + " " + str(row[1])                
+                    storageList.append(details)
+                
+            #creating dropdown menu
+            search = ttk.Combobox(sdelete, values = storageList)
+            search.place(x=129,y=70)
+
+            #creating delete button
+            Button(sdelete, text = "Submit", width = 13, bg = "green", command = deleteStorage).place(x=86,y=100)
+
+        def search(event):
+          #getting the search input
+          searchterm = searchinput.get()
+          search_term = str(searchterm)
+
+          #update the display of the database
+          DisplayData(search_term)
+
+        #----------------STORAGE MENU INTERFACE---------#
+        #setting up window
+        top = Tk()
+        top.title('Storage Menu')
+        top.geometry("835x270")
+        top.configure(background = 'black')
+
+        #Dropdown menu options 
+        options = [ "Storage Equipment Name", "Storage Cost", "Storage ID"]
+
+        #datatype of menu text
+        clicked = StringVar()
+
+        #initial menu text 
+        clicked.set("Storage Name")
+
+        #creating buttons
+        b1 = Button(top, text ="Add", bg = "green", command = add)
+        b2 = Button(top, text ="Delete", bg = "green", command = delete)
+        b3 = Button(top, text ="Edit", bg = "green", command = edit)
+        b4 = Label(top, text ="Filter by:", bg = "green")
+        drop = OptionMenu( top , clicked, *options, command=search)
+        drop.configure(bg='green')
+        b5 = Button(top, text ="Main Menu", bg = "green", command = destroy)
+
+        b1.pack()
+        b1.place(anchor=NW, height=50, width=75, y = 70, x = 15)
+        b2.pack()
+        b2.place(anchor=W, height=50, width=75, y = 155, x = 15)
+        b3.pack()
+        b3.place(anchor=SW, height=50, width=75, y = 240, x = 15)
+        b4.pack()
+        b4.place(anchor=NE, height=30, width=65, y = 70, x = 510)
+        drop.pack()
+        drop.place(y=70, x=515)
+        b5.pack()
+        b5.place(anchor=NE, height=30, width=125, y = 70, x = 790)
+
+        #creating search feature
+        searchinput = Entry(top, width=30, bg="White", borderwidth=6, relief="ridge")
+        searchinput.place(x=220, y=70)
+        searchinput.bind('<KeyRelease>', search)
+
+        searchh = Label(top, text = "search:", width=10, height = 1, bg="green", borderwidth=6, relief="flat")
+        searchh.place(x=136, y=70)
+
+        #creating title
+        frame_h = Frame(top, bg = 'green')
+        frame_h.grid(row=1, column=1, columnspan = 2,padx = 10, pady = 10)
+        Label(frame_h, text = 'Storage Menu', font=('Aptos', 16), bg = 'green').grid(row=1, column=2, columnspan=2, padx=338, pady=10)
+
+        #defining function for creating GUI layout
+        def DisplayForm():
+            global ttree
+            #creating frame
+            MidViewForm = Frame(top, width=300)
+            MidViewForm.place(x=100,  y=110)
+
+            #setting scrollbar
+            scrollbarx = Scrollbar(MidViewForm, orient=HORIZONTAL)
+            scrollbary = Scrollbar(MidViewForm, orient=VERTICAL)
+            ttree = ttk.Treeview(MidViewForm,columns=('storageID','storageEquipmentName','storageDate','storageSpace','storageCustomerName','storageReturn','storageItemQty','storageCost'),
+                                selectmode="extended", height=5, yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set)
+            scrollbary.config(command=ttree.yview)
+            scrollbary.pack(side=RIGHT, fill=Y)
+            scrollbarx.config(command=ttree.xview)
+            scrollbarx.pack(side=BOTTOM, fill=X)
+
+            #setting headings for the columns
+            ttree.heading('storageID', text="Rental ID", anchor=W)
+            ttree.heading('storageEquipmentName', text="Equipment Name", anchor=W)
+            ttree.heading('storageDate', text="Date", anchor=W)
+            ttree.heading('storageSpace', text="Slot Number", anchor=W)
+            ttree.heading('storageCustomerName', text="Customer Name", anchor=W)
+            ttree.heading('storageReturn', text="Return Date", anchor=W)
+            ttree.heading('storageItemQty', text="No. of Spaces Needed", anchor=W)
+            ttree.heading('storageCost', text="Cost (£)", anchor=W)
+
+            #setting width of the columns
+            ttree.column('#0', stretch=NO, minwidth=0, width=0)
+            ttree.column('#1', stretch=NO, minwidth=0, width=50)
+            ttree.column('#2', stretch=NO, minwidth=0, width=80)
+            ttree.column('#3', stretch=NO, minwidth=0, width=80)
+            ttree.column('#4', stretch=NO, minwidth=0, width=80)
+            ttree.column('#5', stretch=NO, minwidth=0, width=80)
+            ttree.column('#6', stretch=NO, minwidth=0, width=80)
+            ttree.column('#7', stretch=NO, minwidth=0, width=80)
+            ttree.column('#8', stretch=NO, minwidth=0, width=100)
+
+            ttree.pack()
+            DisplayData()
+
+        def DisplayData(search_term=""):
+            # Open a connection to the kayak.db database
+            connection = sqlite3.connect("kayak.db")
+            # Create a cursor object
+            cursor = connection.cursor()
+            # Clear the current data
+            ttree.delete(*ttree.get_children())
+            # Execute an SQL SELECT statement with a WHERE clause to filter the results based on the search term
+            sql = "SELECT * FROM tblstorage"
+            if search_term:
+                sql += f" WHERE storageCustomerName LIKE '%{search_term}%' "
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            #getting the value that user wants display to be filtered by
+            clicked1 = clicked.get()
+
+             #if statement which correspond order to selected value from filter by menu
+            if clicked1 == "Storage equipment name":
+                rows = sorted(rows, key=lambda x: x[1])
+            elif clicked1 == "Storage cost":
+                rows = sorted(rows, key=lambda x: x[4])
+            elif clicked1 == "Storage ID":
+                rows = sorted(rows, key=lambda x: x[0])
+            elif clicked1 == "Storage date":
+                rows = sorted(rows, key=lambda x: x[8])
+            # Add the search results to the tree view
+            for row in rows:
+                ttree.insert("", "end", values=row)
+
+        #calling function
+        DisplayForm()
+        
+        top.mainloop() 
+
+
+root.mainloop() 
